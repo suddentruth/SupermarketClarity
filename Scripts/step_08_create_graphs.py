@@ -132,12 +132,15 @@ def create_graph_Spent_per_Category_per_Year(year, market):
     df = pd.read_csv(f"{os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market, year + "_" + v.file_graph_Spent_per_Category_per_Year)}")
 
     plt.figure(figsize=(12, 6))  # Adjust figure size as needed for better readability
-    plt.plot(df['Category'], df['Spent'], marker='o', linestyle='-') # 'o' adds markers at each data point
+    fig, ax = plt.subplots()
+    plt.bar(df['Category'], df['Spent'])
     plt.xlabel('Category')
     plt.ylabel('Spent Money in €')
     plt.title(f"Spending Over Time in {year} per Category")
     plt.xticks(rotation=45, ha='right')
     plt.grid(True)
+    ax.set_axisbelow(True) # put grid more into the background
+    ax.yaxis.grid(color='gray', linestyle='dashed')
 
     # Show the plot
     plt.tight_layout() # Adjust layout to prevent labels from overlapping
