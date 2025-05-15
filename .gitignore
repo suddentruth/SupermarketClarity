@@ -172,3 +172,17 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+# Project specific
+Data/CSV Extracts/*
+Data/CSV Results/*
+Data/CSV Results/For Graphs/*
+Graphs/*
+Your Receipts/*
+
+!Data/CSV Extracts/.gitkeep
+!Data/CSV Results/.gitkeep
+!Data/CSV Results/For Graphs/.gitkeep
+!Graphs/.gitkeep
+!Your Receipts/.gitkeep
