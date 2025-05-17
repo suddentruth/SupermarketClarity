@@ -7,6 +7,7 @@ To achieve that these Python scripts extract bought items from a PDF file receip
 
 Take a look at the [graphs](#graphs) at the end of this file or at the data and graphs within the '[Example](Example)' directory.
 
+If you want to know whether you market is already support check out [Supported Markets](#supported-markets). If yours to be added, add an issue with information as mentioned in [What data is required for bugs](#what-data-is-required-for-bugs).
 
 ### Outline
 + [Requirements](#requirements)
@@ -15,6 +16,7 @@ Take a look at the [graphs](#graphs) at the end of this file or at the data and 
     + [CLEAN_UP.py](#clean_uppy)
 + [How it works](#how-it-works)
 + [Things that don't work yet](#things-that-dont-work-yet)
++ [Supported Markets](#supported-markets)
 + [What data is required for bugs?](#what-data-is-required-for-bugs)
 + [Last Notes](#last-notes)
 + [Graphs](#graphs)
@@ -32,21 +34,21 @@ There are only two scripts for you two execute.
 We assume that you run the scripts from the repository main directory, not your home directory.
 
 ### EXECUTE_ME.py
-This file can be run as it is but also takes either one parameter, the year, or two parameters, year and market.
+This file can be run as it is but also takes either one parameter, the market, or two parameters, market and year.
 
 **No parameters**
 
 ``python3.12 EXECUTE_ME.py``
 
-**Parameter year**
+**Parameter market**
 
-``python3.12 EXECUTE_ME.py 2025``
+``python3.12 EXECUTE_ME.py REWE``
 
 **Parameter year and market**
 
-``python3.12 EXECUTE_ME.py 2025 REWE``
+``python3.12 EXECUTE_ME.py REWE 2025``
 
-In general the script checks that you provide a valid year and market name. If you provide no year, the current year will be assumed. If you provide no market, no extra directories for this separated market will be created.
+In general the script checks that you provide a valid year and market name. If you provide no year, the current year will be assumed. If you provide no market, it will throw an error.
 
 In general the command line tells you in the response if something is missing.
 
@@ -59,11 +61,7 @@ At the beginning your will need to fill this list once. Every item that is not k
 To see an example for how this can look like see [here](Example/Data/CSV%20Results/REWE/complete_items_categories.csv).
 
 ### CLEAN_UP.py
-Sometimes you may want to cleanup your mess. This script helps you with this. It can remove the files for a market or also if no market was provided in the EXECUTE_ME.py scripts.
-
-**Parameter no parameter**
-
-``python3.12 CLEAN_UP.py``
+Sometimes you may want to cleanup your mess. This script helps you with this. It can remove the files for a market created by the EXECUTE_ME.py script.
 
 **Parameter market**
 
@@ -74,26 +72,56 @@ The script will ask you for confirmation before execution and show you everythin
 ## How it works
 The script is based on 8 different steps.
 
-1. Extracting the bought items from the PDF receipt files into CSV files. Currently this is purely based on the German supermarket REWE. If the design of this files is different in other countries or for other supermarkets this piece of code requires the most adaptation.
+1. Extracting the bought items from the PDF receipt files into CSV files. Check if your supermarket is already [supported](#supported-markets). If the design of these files is different in other countries or for other supermarkets this piece of code requires the most adaptation.
 2. Merge all the CSVs into one file for further processing. This file will always ordered by date from oldest to newsest so that new purchases can be seen at the end. For the example look [here](Example/Data/CSV%20Results/REWE/2025_merged_receipts.csv).
 3. This part goes through the merged receipts file and checks every item. If it is not yet known, it gets added to a list. This creates this file [here](Example/Data/CSV%20Results/REWE/2025_unique_items.csv).
 4. Now we take the unique items and try to match them with the data from the ["complete_items_categories"](Example/Data/CSV%20Results/REWE/complete_items_categories.csv) file. Every item that is not known yet will be matched with the catergory "Unknown". The result will be saved in ["\<year>_unique_items_and_categories"](Example/Data/CSV%20Results/REWE/2025_unique_items_and_categories_merged.csv)
 5. Since we may work with multiple years and bought different items over the years this step merges the previously created file in step 4 together to our known file ["complete_items_categories"](Example/Data/CSV%20Results/REWE/complete_items_categories.csv).
 6. In this step, we create the [big enriched receipt file](Example/Data/CSV%20Results/REWE/2025_enriched_receipts.csv). After all the extraction of unique items and mapping them with categories, we can finally add the information of the category to the original long receipt file.
-7. Now, we use the enriched receipt file and transform the data in such ways that they can be used for graphic display as seen in section [Graphs](#graphs). The data that is calculated through sumation and pivoting, can be seen [here](Example/Data/CSV%20Results/For%20graphs/REWE/).
+7. Now, we use the enriched receipt file and transform the data in such ways that they can be used for graphic display as seen in section [Graphs](#graphs). The data that is calculated through different means, can be seen [here](Example/Data/CSV%20Results/For%20graphs/REWE/).
 8. Finally, we use the libraries "Pandas" and "matplotlib" to read in the CSVs for the graphs and create them. How they look like you can see in section [Graphs](#graphs)
 
 
 ## Things that don't work yet
-+ Currently, the only data samples I have are from Rewe. Additionally, the receipts have only so many items that just the first page contains important information.
-    + This means complete week purchases with 100 of items don't work yet. Feel free to give me files to adapt the script.
++ Currently, data samples are limited, especially for edge cases like cancellation or usage of coupons and so on.
 + It is currently based on German language. This means some trigger words would need adaptation for internationalization or even different markets.
++ Many markets seem to provide their receipts as PNG file and not PDFs. This will require additonal adaptation of step 1.
+
+## Supported Markets
+[German food retail markets](https://de.wikipedia.org/wiki/Liste_von_Lebensmitteleinzelhändlern) based on Wikipedia.
+| Markets | eBons | online receipts | pawns | discount| weighted items| meat counter| Cancellation
+|-----|:-----:|:----:|:---:|:---:|:---:|:---:|:-:|
+| REWE | ✅ |  ❌ | ✅ |✅ |✅ |✅ |  ❌ |
+| EDEKA | ✅ |  ❌ | ✅ | ✅ | NA | NA|  ❌ |
+| DM | ✅ |  ❌ | NA | ✅ | NA | NA | ✅  |
+| Aldi Sued | ❌ |
+| Aldi Nord | ❌ |
+| LIDL | ❌ in Progress |
+| Kaufland | ❌ in Progress |
+| PENNY | ❌ |
+| NETTO | ❌ |
+| GLOBUS | ❌ |
+| TEGUT | ❌ |
+| NORMA | ❌ |
+| Nahkauf | ❌ |
+| SPAR | ❌ |
+
+German non-food retail market. Based on receipts I got, no complete list. More used to detect patterns in receipts.
+| Markets | eBons | online receipts | pawns | discount| weighted items| meat counter| Cancellation
+|-----|:-----:|:----:|:---:|:---:|:---:|:---:|:-:|
+| MÜLLER | ❌ in Progress |
+| OBI | ❌ in Progress |
+
+
+
+
 
 ## What data is required for bugs?
 Best things to provide to me is to explain the context in which your error appeared. If possible providing information about market name and how many items were bought during one purchase can help. Also, whether you bought something special that requires additional weighting like food from the meat counter or unpacked vegetables and fruits.
 
-If possible a screenshot of the important part of your receipt can also help. I don't want to know your explicit market or when you bought the stuff. Privacy and so. :)
+If possible a screenshot of the important part of your receipt can also help. I don't want to know your explicit market. Privacy and so. :)
 
+At least this is the data for bugs caused by edge cases. To integrate a new whole market, at least two receipts with a lot of items are very useful.
 
 ## Last notes
 Feel encourage to fork the project and adapt it to your own needs. Also, I am curious about additional features or ideas to create more interesting graphs in the end or maybe add a graphic interface to improve the user experience?

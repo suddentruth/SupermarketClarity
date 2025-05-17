@@ -1,3 +1,4 @@
+### VALUES ###
 # the different directories for processing data
 dir_your_receipts = "Your Receipts"
 dir_data = "Data"
@@ -22,8 +23,35 @@ file_graph_Spent_per_Category_per_Month_pivoted = "Spent_per_Category_per_Month_
 file_graph_Spent_per_Category_per_Year = "Spent_per_Category_per_Year.csv"
 
 
+# Supported Markets
+markets = ["REWE", "EDEKA", "DM"]
+
 # Basic color codes for terminal print messages
 RED = '\033[91m'
 GREEN = '\033[92m'
 BLUE = '\033[94m'
 RESET = '\033[0m'  # This resets the color back to default
+
+### FUNCTIONS ###
+import csv
+
+def writeItemsToCSV(file_path, header, items):
+    try:
+        with open(f"{file_path}", 'w', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(header)
+            if items: writer.writerows(items)
+    except Exception as e:
+        print(f"An error occurred while writing to the output file: {e} \n{BLUE}File path: {file_path}\nHeader: {header}\nItems: {items}{RESET}")
+
+def readCSV(file_path):
+    try:
+        with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile)
+            header = next(reader, None)
+            rows = []
+            for row in reader:
+                rows.append(row)
+            return header, rows
+    except Exception as e:
+        print(f"Error reading CSV file: {e}\n{BLUE}File path: {file_path}{RESET}")

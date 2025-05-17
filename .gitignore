@@ -180,7 +180,9 @@ Data/CSV Results/*
 Data/CSV Results/For Graphs/*
 Graphs/*
 Your Receipts/*
+Test Data - Markets Receipts/*
 
+# Exclusions to keep up the directory structure
 !Data/CSV Extracts/.gitkeep
 !Data/CSV Results/.gitkeep
 !Data/CSV Results/For Graphs/.gitkeep

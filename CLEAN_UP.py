@@ -40,24 +40,24 @@ if __name__ == "__main__":
     if input(f"{v.BLUE}Are you sure you want to delete a lot of files? (y/n){v.RESET}") != "y":
         exit()
 
+    if len(sys.argv) == 0:
+        sys.exit(f"{v.RED}Provide name of one supported market:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}.")
+    
+
     if len(sys.argv) > 1:
         try:
             market = sys.argv[1]
-            print(f"Received argument for supermarket: {market}")
+            print(f"Received second argument for supermarket: {v.BLUE}{market}{v.RESET}")
+            if market not in v.markets:
+                sys.exit(f"{v.RED}Market must be supported. Check following list:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}")
             remove_directory(os.path.join(v.dir_your_receipts, market))
             remove_directory(os.path.join(v.dir_data, v.dir_CSV_extracts, market))
             remove_directory(os.path.join(v.dir_data, v.dir_CSV_results, market))
             remove_directory(os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market))
             remove_directory(os.path.join(v.dir_graph_images, market))
         except:
-            print("Error: Argument must be a valid supermarket name with no escape characters, example 'ALDI'.")
-    else:
-        print("No second argument provided. Deleting all data not market related.")
-        remove_files(os.path.join(v.dir_your_receipts))
-        remove_files(os.path.join(v.dir_data, v.dir_CSV_extracts))
-        remove_files(os.path.join(v.dir_data, v.dir_CSV_results))
-        remove_files(os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs))
-        remove_files(os.path.join(v.dir_graph_images))
+            sys.exit(f"{v.RED}Error: First argument must be a valid supermarket name. Check following list:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}")
+   
 
     print(f"{v.GREEN}done{v.RESET}")
 

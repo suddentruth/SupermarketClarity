@@ -29,40 +29,44 @@ def create_directory(dir_name):
         return False
 
 if __name__ == "__main__":
+    # Handle the different input arguments
+    if len(sys.argv) == 0:
+        sys.exit(f"{v.RED}Provide name of one supported market:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}.")
+    
     if len(sys.argv) > 1:
         try:
-            arg1 = sys.argv[1]
-            print(f"Received first argument for year: {arg1}")
-            if len(arg1) != 4: raise ValueError # throw error if year is not 4 characters long
-            parsed_date = parser.parse(arg1)  # Attempts to parse as a date if not it will throw error
-            year = arg1
-        except ValueError:
-            print(f"{v.RED}Error: First argument must be a valid year, example '2025'.{v.RESET}")
-    else:
-        year = dt.datetime.now().strftime("%Y") # Default value
-        print(f"No first argument provided. Using default value of current year, right now {year}.")
+            market = sys.argv[1]
+            print(f"Received second argument for supermarket: {v.BLUE}{market}{v.RESET}")
+            if market not in v.markets:
+                sys.exit(f"{v.RED}Market must be supported. Check following list:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}")
 
-    if len(sys.argv) > 2:
-        try:
-            market = sys.argv[2]
-            print(f"Received second argument for supermarket: {market}")
-            
             create_directory(os.path.join(v.dir_your_receipts, market))
             create_directory(os.path.join(v.dir_data, v.dir_CSV_extracts, market))
             create_directory(os.path.join(v.dir_data, v.dir_CSV_results, market))
             create_directory(os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market))
             create_directory(os.path.join(v.dir_graph_images, market))
         except:
-            print("{v.RED}Error: Second argument must be a valid supermarket name with no escape characters, example 'ALDI'.{v.RESET}")
+            sys.exit(f"{v.RED}Error: First argument must be a valid supermarket name. Check following list:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}")
     else:
-        print("No second argument provided. Using no market string.")
-        market = ""
+        sys.exit(f"{v.RED}Provide name of one supported market:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}.")
+
+    if len(sys.argv) > 2:
+        try:
+            year = sys.argv[2]
+            print(f"Received second argument for year: {year}")
+            if len(year) != 4: raise ValueError # throw error if year is not 4 characters long
+            parsed_date = parser.parse(year)  # Attempts to parse as a date if not it will throw error
+        except ValueError:
+            print(f"{v.RED}Error: Second argument must be a valid year, example '2025'.{v.RESET}")
+    else:
+        year = dt.datetime.now().strftime("%Y") # Default value
+        print(f"No second argument provided. Using default value of current year, right now {v.BLUE}{year}{v.RESET}.")
 
 
     # 01 - Convert original receipts from pdf to csv files
     print("Step 1")
     allFiles = os.listdir(os.path.join(v.dir_your_receipts,market))
-    allFiles = list(filter(lambda file: not file.startswith("."), allFiles))
+    allFiles = list(filter(lambda file: not file.startswith("."), allFiles)) # exclude system files that start with '.'.
     if len(allFiles) == 0:
         sys.exit(f"{v.BLUE}First time run.\nCopy your receipts into this directory '{os.path.join(v.dir_your_receipts,market)}'.\nThen run the script again!{v.RESET}")
     allPDFs = []
@@ -73,17 +77,16 @@ if __name__ == "__main__":
     for pdf in allPDFs:
         csv_file = pdf.replace("pdf", "csv")
         pdf_file = os.path.join(v.dir_your_receipts, market, pdf)
-        step_01.extract_receipt_data(pdf_file, csv_file, market)
-    # print(f"Successfully transformed pdfs from directory '{os.path.join(v.dir_your_receipts, market)}' to extracted the receipts into CSVs in directory '{os.path.join(v.dir_CSV_extracts, market)}'.")
-
+        step_01.extract_receipt_data(pdf_file, csv_file, year, market)
+    
     # 02 - Merge CSVs receipts to x_merged_receipts where x is the year
     print("Step 2")
     step_02.merge_csv_files(year, market)
-
+    
     # 03 - Extract unique items from x_merged_receipt files
     print("Step 3")
     step_03.extract_unique_items(year, market)
-
+    
     # 04 - Unique items and known categories merged
     print("Step 4")
     step_04.merge_known_categories_with_unique_items(year, market)
@@ -95,14 +98,14 @@ if __name__ == "__main__":
     # 06 - Create final enriched receipts
     print("Step 6")
     step_06.enrich_items_with_category(year, market)
-
+    
     # 07 - Create the data for the graphs
     print("Step 7")
     gf.calculate_Spent_per_Day(year, market)
     gf.calculate_Spent_per_Month(year, market)
     gf.calculate_Spent_per_Category_per_Month(year, market)
     gf.calculate_Spent_per_Category_per_Year(year, market)
-
+    
     # 08 - Create graphs
     print("Step 8")
     cg.create_graph_Spent_per_Day(year, market)
