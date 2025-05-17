@@ -181,6 +181,7 @@ Data/CSV Results/For Graphs/*
 Graphs/*
 Your Receipts/*
 Test Data - Markets Receipts/*
+*complete_items_categories.csv
 
 # Exclusions to keep up the directory structure
 !Data/CSV Extracts/.gitkeep

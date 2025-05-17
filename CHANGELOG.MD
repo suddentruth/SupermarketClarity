@@ -1,4 +1,7 @@
-
+v.0.2.1
++ Added market info to "complete_items_categories" file
++ CleanUp now saves "complete_items_categories" file to main directory with timestamp to prevent accidential deletion.
+    + Adapted .gitignore file respectively.
 
 v0.2.0
 + Added support for markets DM and EDEKA

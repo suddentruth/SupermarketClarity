@@ -61,7 +61,7 @@ At the beginning your will need to fill this list once. Every item that is not k
 To see an example for how this can look like see [here](Example/Data/CSV%20Results/REWE/complete_items_categories.csv).
 
 ### CLEAN_UP.py
-Sometimes you may want to cleanup your mess. This script helps you with this. It can remove the files for a market created by the EXECUTE_ME.py script.
+Sometimes you may want to cleanup your mess. This script helps you with this. It can remove the files for a market created by the EXECUTE_ME.py script. However, since the "market_complete_items_categories" file contains a lot of info created by manual mapping, this one gets moved and saved into the main directory, with timestamp in format "%Y-%m-%d_%H:%M:%S" attached so that no overwriting of previous mappings happen.
 
 **Parameter market**
 

@@ -71,7 +71,7 @@ def calculate_Spent_per_Category_per_Year(year, market):
 ## helper functions ##
 def getUniqueCategories(market):
     unique_categories = set()
-    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, v.file_complete_items_categories)
+    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_complete_items_categories)
     categoriesRows = v.readCSV(file_categories)[1]
     # row[0] is item_name, row[1] is Category
     for row in categoriesRows:

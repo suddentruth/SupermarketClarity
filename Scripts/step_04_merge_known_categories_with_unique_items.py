@@ -9,7 +9,7 @@ def merge_known_categories_with_unique_items(year, market):
     category_dictionary = {}
 
     ### Handle Categories ###
-    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, v.file_complete_items_categories)
+    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_complete_items_categories)
     # to ensure category file exists always, even if only containing the header row
     if not os.path.exists(file_categories): v.writeItemsToCSV(file_categories,["item","category"],[])
     

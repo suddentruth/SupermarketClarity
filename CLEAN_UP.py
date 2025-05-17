@@ -2,6 +2,7 @@
 import os
 import sys
 import Scripts.script_values as v
+import datetime as dt
 
 def remove_directory(dir_name):
     """Removes a directory if it exists and returns True on success, False otherwise."""
@@ -26,13 +27,18 @@ def remove_files(dir_name):
             filtered_list = list(filter(lambda file: not file.startswith("."), dir_list))
             for file in filtered_list:
                 if os.path.isfile(os.path.join(dir_name,file)):
-                    os.remove(os.path.join(dir_name,file))
-                    print(f"file '{file}' in dir {dir_name} removed.")           
+                    if v.file_complete_items_categories in file:
+                        newDestination = dt.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")+" "+str(file)
+                        os.rename(os.path.join(dir_name,file), newDestination)
+                        print(f"file {file} renamed and moved to {newDestination}.")
+                    else:
+                        os.remove(os.path.join(dir_name,file))
+                        print(f"file '{file}' in dir {dir_name} removed.")           
             return True
         else:
             print(f"Directory '{dir_name}' did not exist.")
             return False
-    except OSError as e:  # Catch potential errors during directory creation
+    except Exception as e:
         print(f"Error removing files in directory '{dir_name}': {e}")
         return False
 

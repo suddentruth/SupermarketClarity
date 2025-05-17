@@ -8,7 +8,7 @@ def enrich_items_with_category(year, market):
     """
     # Create a dictionary for category lookup from the category file
     category_dictionary = {}
-    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, v.file_complete_items_categories)
+    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_complete_items_categories)
     completeItemsCategoriesRows = v.readCSV(file_categories)[1]
     # row[0] is item_name, row[1] is category
     for row in completeItemsCategoriesRows:

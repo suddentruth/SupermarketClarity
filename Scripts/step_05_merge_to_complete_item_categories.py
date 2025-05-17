@@ -11,7 +11,7 @@ def merge_to_complete_categories(market):
     item_list = [] # List to hold unique items for writing to csv
 
     # Load known category items into item list
-    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, v.file_complete_items_categories)
+    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_complete_items_categories)
     categoryRows = v.readCSV(file_categories)[1]
 
     # row[0] is item_name, row[1] is category
@@ -34,5 +34,5 @@ def merge_to_complete_categories(market):
                     item_list.append([row[0], row[1]])
     
     # Write data to CSV file
-    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, v.file_complete_items_categories)
+    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_complete_items_categories)
     if item_list: v.writeItemsToCSV(file_categories, ["item", "category"], item_list)
