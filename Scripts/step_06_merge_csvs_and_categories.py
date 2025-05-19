@@ -21,9 +21,9 @@ def enrich_items_with_category(year, market):
     # row[0] is item_name, row[1] is Price, row[2] is Quantity, row[3] is Date
     for row in mergedReceiptsRows:
         category = category_dictionary.get(row[0], "") # Get category or empty string if not found
-        totalPrice = float(row[1])*float(row[2]) # Calculate total price
+        totalPrice = round(float(row[1])*float(row[2]),2) # Calculate total price
         enriched_items.append([row[0], row[1], row[2], row[3], category, totalPrice]) # category and totalPrice as enrichment
    
     # Write data to CSV file
     file_enriched_receipts = os.path.join(v.dir_data, v.dir_CSV_results, market, year + "_"+ v.file_enriched_receipts)
-    if enriched_items: v.writeItemsToCSV(file_enriched_receipts, ["Item Name", "Price", "Quantity", "Date", "Category"], enriched_items)
+    if enriched_items: v.writeItemsToCSV(file_enriched_receipts, ["Item Name", "Price", "Quantity", "Date", "Category","Total Price"], enriched_items)

@@ -1,3 +1,11 @@
+"""
+    Tesseract is used for reading text from images like for LIDL.
+    Requires adaptation if not installed via homebrew.
+    Check this link for core project: https://github.com/tesseract-ocr/tesseract
+    Check this link for python wrapper: https://github.com/sirfz/tesserocr
+"""
+tesseract_training_data = "/opt/homebrew/share/tessdata"
+
 ### VALUES ###
 # the different directories for processing data
 dir_your_receipts = "Your Receipts"
@@ -22,9 +30,13 @@ file_graph_Spent_per_Category_per_Month = "Spent_per_Category_per_Month.csv"
 file_graph_Spent_per_Category_per_Month_pivoted = "Spent_per_Category_per_Month_pivoted.csv"
 file_graph_Spent_per_Category_per_Year = "Spent_per_Category_per_Year.csv"
 
-
-# Supported Markets
-markets = ["REWE", "EDEKA", "DM"]
+markets = { "REWE" : "REWE", 
+            "EDEKA" : "EDEKA",
+            "DM" : "DM",
+            "LIDL" : "LIDL",
+            "Kaufland" : "Kaufland",
+            "Müller" : "Müller",
+            "OBI" : "OBI"}
 
 # Basic color codes for terminal print messages
 RED = '\033[91m'
@@ -55,3 +67,26 @@ def readCSV(file_path):
             return header, rows
     except Exception as e:
         print(f"Error reading CSV file: {e}\n{BLUE}File path: {file_path}{RESET}")
+
+def readLinesFromFakePDF(file_path):
+    try:
+        with open(file_path, 'r', newline='', encoding='utf-8') as file:
+            lines = []
+            for line in file:
+                lines.append(line.strip())
+            return lines
+    except Exception as e:
+        print(f"Error reading png to pdf converted file while extracing data. File: {e}\n{v.BLUE}File path: {file_path}{v.RESET}")
+
+def readTextFromFakePDF(file_path):
+    # Special handling for png files. Using reader as pdf_file string
+    try:
+        with open(file_path, 'r', newline='', encoding='utf-8') as file:
+            text = ""
+            for line in file:
+                text += line
+            return text
+    except Exception as e:
+        print(f"Error reading png to pdf converted when getting the date. File: {e}\n{v.BLUE}File path: {file_path}{v.RESET}")
+
+    

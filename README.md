@@ -28,6 +28,9 @@ This code has been created with Python 3.12. To install it and manage its enviro
 
 Once your Python is setup you only need to install [Pandas](https://pandas.pydata.org/docs/getting_started/install.html) via ``pip install pandas``. It contains the dependency of [matplotlib](https://matplotlib.org).
 
+If you require the support of PNGs you need to install [Tesseract-OCR](https://github.com/tesseract-ocr/tesseract?tab=readme-ov-file#installing-tesseract) and the python wrapper for it [TesserOCR](https://github.com/sirfz/tesserocr) via ``pip install tesserocr``.  If you install "Tesseract-OCR" not via Homebrew on MacOS you may need to adapt the path of the variable ``tesseract_training_data`` in [script_value.py](/Scripts/script_values.py) file.
+
+
 ## How to use it
 There are only two scripts for you two execute.
 
@@ -89,28 +92,35 @@ The script is based on 8 different steps.
 
 ## Supported Markets
 [German food retail markets](https://de.wikipedia.org/wiki/Liste_von_Lebensmitteleinzelhändlern) based on Wikipedia.
-| Markets | eBons | online receipts | pawns | discount| weighted items| meat counter| Cancellation
-|-----|:-----:|:----:|:---:|:---:|:---:|:---:|:-:|
-| REWE | ✅ |  ❌ | ✅ |✅ |✅ |✅ |  ❌ |
-| EDEKA | ✅ |  ❌ | ✅ | ✅ | NA | NA|  ❌ |
-| DM | ✅ |  ❌ | NA | ✅ | NA | NA | ✅  |
-| Aldi Sued | ❌ |
-| Aldi Nord | ❌ |
-| LIDL | ❌ in Progress |
-| Kaufland | ❌ in Progress |
-| PENNY | ❌ |
-| NETTO | ❌ |
-| GLOBUS | ❌ |
-| TEGUT | ❌ |
-| NORMA | ❌ |
-| Nahkauf | ❌ |
-| SPAR | ❌ |
+
+NA stands for "not available" in the following tables. 
+
+Markets that only offer a PNG as receipt can be faulty since OCR doesn't work always 100% correct.
+
+This tables was updated the last time at 18.05.2025.
+| Markets | eReceipts | eReceipts also online available| PDF or PNG| online receipts | pawns | discount| weighted items| meat counter| Cancellation |
+|-----  |:---:|:--:|:---:|:--:|:--:|:-:|:--:|:--:|:-:|
+| REWE |    ✅ | ✅ | PDF |  | ✅ | ✅ | ✅ | ✅ |  |
+| EDEKA |   ✅ | ❌ | PDF |  | ✅ | ✅ |  | |  |
+| DM |      ✅ | ✅ | PDF |   | NA | ✅ | NA | NA | ✅ |
+| Aldi Sued|❌ | |     |   |    |    |   |     |    |
+| Aldi Nord|❌ | |     |   |    |    |   |     |    |
+| LIDL |    ✅ | ✅ | PNG| | | |✅ | | |
+| Kaufland| ✅ |❌ |PDF| |✅| ✅|✅ | | |
+| PENNY |   ❌ | NA | | | | | | | |
+| NETTO |   ✅ to get| to check | to check | | | | | | |
+| GLOBUS |  ❌ | | | | | | | |
+| TEGUT |   ❌ | | | | | | | |
+| NORMA |   ❌ | | | | | | | |
+| Nahkauf | ❌ | | | | | | | |
+| Alnatura| ❌ | | | | | | | |
 
 German non-food retail market. Based on receipts I got, no complete list. More used to detect patterns in receipts.
-| Markets | eBons | online receipts | pawns | discount| weighted items| meat counter| Cancellation
-|-----|:-----:|:----:|:---:|:---:|:---:|:---:|:-:|
-| MÜLLER | ❌ in Progress |
-| OBI | ❌ in Progress |
+| Markets | eReceipts |  eReceipt also online available| PDF or PNG| online receipts | pawns | discount| weighted items| meat counter| Cancellation
+|-----|:-----:|:----:|:---:|:---:|:---:|:---:|:-:|:-:|:-:|
+| MÜLLER|   ✅ | to check| PNG |
+| ROSSMANN| 
+| OBI |     ✅ | to check | PDF|  |  |  | ✅ | 
 
 
 

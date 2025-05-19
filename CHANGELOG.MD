@@ -1,4 +1,12 @@
-v.0.2.1
+v0.3.0
++ Added Support for Kaufland and OBI
++ Added Support for PNGs! Therefore LIDL and Müller are now supported.
+    + However, they may are not as accurate because OCR can fail.
++ Bug fix: Added "Total Price" as columnn titel to enriched_receipts.csv file.
++ Bug fix: Fixed regex for date recognition in DM processing.
++ Bug fix: Fixed rounding total price (quantity x price per unit)
+
+v0.2.1
 + Added market info to "complete_items_categories" file
 + CleanUp now saves "complete_items_categories" file to main directory with timestamp to prevent accidential deletion.
     + Adapted .gitignore file respectively.
