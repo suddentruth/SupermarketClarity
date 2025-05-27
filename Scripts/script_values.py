@@ -13,11 +13,13 @@ dir_data = "Data"
 dir_CSV_extracts = "CSV Extracts"
 dir_CSV_results = "CSV Results"
 dir_for_graphs = "For graphs"
+dir_for_categories = "For categories"
 dir_graph_images = "Graphs"
 
 # file names for data extraction and processing to tables
 file_merged_receipts = "merged_receipts.csv"
 file_unique_items = "unique_items.csv"
+file_unique_categories = "unique_categories.csv"
 file_complete_items_categories = "complete_items_categories.csv"
 file_unique_items_and_categories_merged = "unique_items_and_categories_merged.csv"
 file_enriched_receipts = "enriched_receipts.csv"

@@ -8,7 +8,9 @@ def merge_to_complete_categories(market):
     """
 
     unique_items = set()  # Use a set to efficiently store unique item names
+    unique_categories = set() # Use set to get all unique categories
     item_list = [] # List to hold unique items for writing to csv
+    categories_list = [] # List for writing to csv
 
     # Load known category items into item list
     file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_complete_items_categories)
@@ -19,6 +21,9 @@ def merge_to_complete_categories(market):
         if row[0] not in unique_items:
             unique_items.add(row[0])
             item_list.append([row[0], row[1]])
+        if row[1] not in unique_categories:
+            unique_categories.add(row[1])
+            categories_list.append([row[1]])
 
     # update unique items and item-category list with data from all the years
     dir_csv_results = os.path.join(v.dir_data, v.dir_CSV_results, market)
@@ -36,3 +41,9 @@ def merge_to_complete_categories(market):
     # Write data to CSV file
     file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_complete_items_categories)
     if item_list: v.writeItemsToCSV(file_categories, ["item", "category"], item_list)
+    
+    
+    file_unique_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_unique_categories)
+    
+    if categories_list: v.writeItemsToCSV(file_unique_categories, ["category"], categories_list)
+    else: merge_to_complete_categories(market) # run again, the first time the complete categories file is not yet known.

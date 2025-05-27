@@ -9,7 +9,7 @@ BIO TOMATENS.KRA,Processed Meal Part
 STUECKIGE TOMATE,Vegetables
 CHIPSFRISCH,Snacks
 ORIENTAL,Snacks
-"Funny Frisch 0,99",Snacks
+"Funny Frisch 0,99",Discount
 HAFERFLOCK. ZART,Cereal
 SPAETZLETOPF,Ready Meals
 KOKOS,Candy
@@ -23,7 +23,7 @@ CARAMEL BROWNIE,Candy
 ZARTBITTERSCHOKO,Candy
 SCHO.BLACK/WHITE,Candy
 SCHOGETT.VM.NUSS,Candy
-"Ben+Jerrys 3,99",Candy
+"Ben+Jerrys 3,99",Discount
 REWE WOKMISCHUNG,Vegetables
 ROTE LINSEN,Lentils
 REWE Bio -5%,Discount
@@ -41,7 +41,7 @@ SOFT TRIP CHOC,Candy
 MAULTASCHEN.,Processed Meal Part
 GEMUESEPF. FRZ.,Processed Meal Part
 HERINGSFILETS,Ready Meals
-"Heringsfilet 1,29",Ready Meals
+"Heringsfilet 1,29",Discount
 FLEISCHWU.ND,Animal
 WELTMEISTERBROT,Cereal
 PAPRIKA MIX ESP,Vegetables
@@ -68,7 +68,7 @@ KIDNEY BOHNEN,Lentils
 Versch.Sorten,Snacks
 RITTER CREAMY M.,Candy
 HASELNUSS,Candy
-"Ritter Sport 0,77",Candy
+"Ritter Sport 0,77",Discount
 NATURALS ROSMARI,Snacks
 WAFFEL,Candy
 KART.FESTK.BIO,Vegetables
@@ -87,7 +87,7 @@ BIO KICH.ERB.CHI,Snacks
 SCHOGETTEN ZB,Candy
 COCA COLA ZERO,Cola
 CRUNCHIPS HOTP,Snacks
-"Lorenz 0,99",Snacks
+"Lorenz 0,99",Discount
 PAPRIKA ROT,Vegetables
 HAEHNCHENPFANNE,Ready Meals
 BIO HIRTENKAESE,Dairy
@@ -136,13 +136,13 @@ AUBERGINE,Vegetables
 GETR. TOMATEN,Processed Meal Part
 PASSIERTE TOMATE,Vegetables
 PFIRSICH GELB,Fruit
-"Coca Cola 2L 1,19",Cola
+"Coca Cola 2L 1,19",Discount
 BANANE BIO,Fruit
 TOFFIFEE WHITE,Candy
 FA MEN,Hygiene
 FA,Hygiene
 LEERG. MW E. ST,Pawn Payback
-"Fa Dusche 0,88",Hygiene
+"Fa Dusche 0,88",Discount
 ZWIEBEL ROT BIO,Vegetables
 BIO SUESSR-BUTT.,Dairy
 APFEL SNACKAPFEL,Fruit
@@ -173,11 +173,11 @@ SOYADESS.SCHOKO,Candy
 BIO KOKOSMILCH,Processed Meal Part
 KAROTTE BIO,Vegetables
 HAEHNCHEN PAELLA,Ready Meals
-"Frosta Gerichte 2,49",Ready Meals
+"Frosta Gerichte 2,49",Discount
 BIO CAMEMBERT,Dairy
 SOJAGURT NATUR,Yoghurt-Meal
 TORT. TOM-MOZ,Processed Meal Part
-"Appel Heringsf. 1,19",Ready Meals
+"Appel Heringsf. 1,19",Discount
 ORANGE 60%,Candy
 TORTELLONI,Processed Meal Part
 KEKSE NUESSE,Candy
@@ -185,14 +185,14 @@ M&M S 250GR,Candy
 PAELLA,Ready Meals
 PRINZENROLLE,Candy
 APFELMUS,Processed Meal Part
-"Funny Frisch 1,11",Snacks
+"Funny Frisch 1,11",Discount
 SCHOKOMUESLI,Breakfast
 SOFT CAKE ORANGE,Candy
 ZITRONE BIO,Vegetables
 SCHINKEN-SAUERRA,Ready Meals
 HERINGSFILET TER,Ready Meals
 ZC KARIESSCHUTZ,Hygiene
-"Ofenfrische 1,88",Snacks
+"Ofenfrische 1,88",Discount
 KNOBLAUCH,Vegetables
 BIO PORR. BEERE,Breakfast
 AUBERGINE BIO,Vegetables
@@ -200,7 +200,7 @@ LEERG. MW V. ST,Pawn Payback
 ROTKOHL,Vegetables
 MERCI MOU.CHOC,Candy
 CHOCO EDELHERB,Candy
-"Merci 2,29",Candy
+"Merci 2,29",Discount
 PRINZENROLLE VK,Candy
 M&M S PEANUT,Candy
 LEIBNIZ MINIS,Candy

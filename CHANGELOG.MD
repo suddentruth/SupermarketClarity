@@ -1,3 +1,7 @@
+v0.4.0
++ Added daymap (heatmap) graphs for individual categories but also all categories over all years.
++ Extracting unique items to their own file now.
+
 v0.3.0
 + Added Support for Kaufland and OBI
 + Added Support for PNGs! Therefore LIDL and Müller are now supported.

@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import dayplot as dp
 
 def create_graph_Spent_per_Day(year, market):
     df = pd.read_csv(f"{os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market, year + "_" + v.file_graph_Spent_per_Day)}")
@@ -161,3 +162,99 @@ def create_graph_Spent_per_Month_over_Years(market):
     # Save plot
     plt.tight_layout() # Adjust layout to prevent labels from overlapping
     plt.savefig(f"{os.path.join(v.dir_graph_images, market, v.file_graph_Spent_per_Month_over_Years+".png")}", bbox_inches='tight')
+
+def create_graph_Spent_for_Category_per_Year(year, market, category):
+    file_tableSpentPerCategoryXPerDay = os.path.join(v.dir_data,v.dir_CSV_results,v.dir_for_graphs,v.dir_for_categories,market,year+"_"+category+"_"+v.file_graph_Spent_per_Category_per_Year)
+    df = pd.read_csv(file_tableSpentPerCategoryXPerDay)
+    
+    fig, ax = plt.subplots(figsize=(15,6))
+    # cmap = plt.cm.Greens
+    cmap = plt.cm.copper
+    
+    dp.calendar(
+        dates=df["Date"],
+        values=df["Spent"],
+        cmap=cmap,
+        start_date=f"{year}-01-01",
+        end_date=f"{year}-12-31",
+        ax=ax,
+        week_starts_on="Monday"
+    )
+
+    plt.colorbar(plt.pcolor(df['Spent'].values.reshape(1,-1), cmap=cmap,visible=False))
+    plt.title(f"Heatmap for category \"{category}\" in year {year}")
+    
+    plt.savefig(f"{os.path.join(v.dir_graph_images, market, year+"_"+category+"_"+v.file_graph_Spent_per_Category_per_Year+".png")}", bbox_inches='tight')
+
+def create_graph_Spent_for_Category(market):
+    
+    # Get the years of data
+    years = []
+    dir_csv_results_for_graphs = os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market)
+    for filename in sorted(os.listdir(dir_csv_results_for_graphs), reverse=False):
+        if v.file_graph_Spent_per_Month in filename:
+            years.append(filename[:4])
+
+    # Get the categories
+    file_unique_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_unique_categories)
+    categories = v.readCSV(file_unique_categories)[1]
+
+    # Plot creation
+    left_side_category_text_args = dict(
+        x=-5, y=3, size=50, rotation='vertical', va="center", ha="center" # values are estimate through trying
+    )
+    top_side_year_text_args = dict(
+        x=26, y=-3.5, size=50, ha="center"
+    )
+
+
+    fig, axs = plt.subplots(figsize=(15*(len(years)+2),6*len(categories)) ,nrows=len(categories), ncols=len(years))
+    # Check this page for other, better colors: https://matplotlib.org/stable/users/explain/colors/colormaps.html
+    cmap = plt.cm.copper
+
+    fig.suptitle("Spent Money per Category per Day over Years", fontsize=55 , y=1.005)
+    for category in categories:
+        for year in years:
+            file_tableSpentPerCategoryXPerDay = os.path.join(v.dir_data,v.dir_CSV_results,v.dir_for_graphs,v.dir_for_categories,market,year+"_"+category[0]+"_"+v.file_graph_Spent_per_Category_per_Year)
+            
+            # Handle not file available
+            if os.path.exists(file_tableSpentPerCategoryXPerDay):
+                df = pd.read_csv(file_tableSpentPerCategoryXPerDay)
+            else:
+                df = pd.DataFrame(data={'Date': [f"{year}-01-01", f"{year}-12-31"], 'Spent': [0, 0]})
+            
+            # Ensure the access the subplots correctly
+            if len(categories) > 1 and len(years) > 1:
+                ax = axs[categories.index(category), years.index(year)]
+            elif len(categories) > 1 and len(years) == 1:
+                ax = axs[categories.index(category)]
+            elif len(categories) == 1 and len(years) > 1:
+                ax = axs[years.index(year)]
+            elif len(categories) == 1 and len(years) == 1:
+                ax = axs
+            
+            # Transform long category names into multiple lines
+            if years.index(year) == 0:
+                splittedCategories = category[0].replace(" ","\n").replace("-","\n")
+                ax.text(s=f"{splittedCategories}", **left_side_category_text_args)
+            if categories.index(category) == 0:
+                ax.text(s=f"{year}", **top_side_year_text_args)
+            
+            dp.calendar(
+                dates=df['Date'],
+                values=df['Spent'],
+                cmap=cmap,
+                start_date=f"{year}-01-01",
+                end_date=f"{year}-12-31",
+                week_starts_on="Monday",
+                ax=ax
+            )
+            
+            heatmap = plt.pcolor(df['Spent'].values.reshape(1,-1), cmap=cmap,visible=False)
+            cb = fig.colorbar(heatmap,ax=ax)
+            # if not os.path.exists(file_tableSpentPerCategoryXPerDay): cb.remove() # doesn't work out as wanted. If last row contains no data for a year it will not be shown.
+    
+    plt.tight_layout()
+    
+    # plt.show()
+    plt.savefig(f"{os.path.join(v.dir_graph_images, market, "Over_Years_per_category_"+v.file_graph_Spent_per_Category_per_Year+".png")}", bbox_inches='tight')

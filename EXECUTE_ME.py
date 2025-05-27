@@ -45,6 +45,7 @@ if __name__ == "__main__":
             create_directory(os.path.join(v.dir_data, v.dir_CSV_extracts, market))
             create_directory(os.path.join(v.dir_data, v.dir_CSV_results, market))
             create_directory(os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market))
+            create_directory(os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, v.dir_for_categories, market))
             create_directory(os.path.join(v.dir_graph_images, market))
         except:
             sys.exit(f"{v.RED}Error: First argument must be a valid supermarket name. Check following list:{v.RESET}\n{v.BLUE}{v.markets.values()}{v.RESET}")
@@ -62,6 +63,24 @@ if __name__ == "__main__":
     else:
         year = dt.datetime.now().strftime("%Y") # Default value
         print(f"No second argument provided. Using default value of current year, right now {v.BLUE}{year}{v.RESET}.")
+
+    category = ""
+    if len(sys.argv) > 3:
+        try:
+            category = str(sys.argv[3])
+            print(f"Received third argument for category: {category}")
+            file_unique_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_unique_categories)
+            categories = v.readCSV(file_unique_categories)[1]
+            if categories:
+                known_categories = []
+                for cat in categories:
+                    known_categories.append(cat[0])
+                if category not in known_categories:
+                    print(f"Failed to find category, using default value \"\". Possible values for categories are:\n{v.BLUE}{known_categories}{v.RESET}")
+            
+        except Exception as e:
+            print(f"No valid category as third argument provided. In your data set only following categories are allowed.\nTherefore, none is selected.\n{v.BLUE}{categories}{v.RESET}")
+    
 
 
     # 00 - Convert PNGs into PDFs for special cases
@@ -132,6 +151,8 @@ if __name__ == "__main__":
     gf.calculate_Spent_per_Month(year, market)
     gf.calculate_Spent_per_Category_per_Month(year, market)
     gf.calculate_Spent_per_Category_per_Year(year, market)
+    if category: gf.calculate_Spent_for_Category_x_per_Year(year, market, category)
+    gf.calculate_Spent_for_Categories_over_years(market)
     
     # 08 - Create graphs
     print("Step 8")
@@ -140,5 +161,8 @@ if __name__ == "__main__":
     cg.create_graph_Spent_per_Category_per_Year(year, market)
     cg.create_graph_Spent_per_Category_per_Month(year, market)
     cg.create_graph_Spent_per_Month_over_Years(market)
+    if category: cg.create_graph_Spent_for_Category_per_Year(year, market, category)
+    cg.create_graph_Spent_for_Category(market)
+
 
     print(f"{v.GREEN}done :) Please check directory '{os.path.join(v.dir_graph_images, market)}' for images!{v.RESET}")

@@ -68,6 +68,38 @@ def calculate_Spent_per_Category_per_Year(year, market):
     file_graph_Spent_per_Category_per_Year = os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market, year + "_" + v.file_graph_Spent_per_Category_per_Year)
     if items: v.writeItemsToCSV(file_graph_Spent_per_Category_per_Year, ["Category", "Spent"], items)
 
+
+def calculate_Spent_for_Category_x_per_Year(year, market, category):
+    file_enriched_receipts = os.path.join(v.dir_data, v.dir_CSV_results, market, year + "_"+ v.file_enriched_receipts)
+    enrichedReceiptsRows = v.readCSV(file_enriched_receipts)[1]
+
+    # may add "float(row[1]) > 0" as condition to remove discounts from data
+    filteredReceiptsForCategory = list(filter(lambda row: row[4] == category, enrichedReceiptsRows))
+    tableSpentPerCategoryXPerDay = getSpentPerTime(market, year, "Day", filteredReceiptsForCategory)
+    
+    file_tableSpentPerCategoryXPerDay = os.path.join(v.dir_data,v.dir_CSV_results,v.dir_for_graphs,v.dir_for_categories,market,year+"_"+category+"_"+v.file_graph_Spent_per_Category_per_Year)
+    if tableSpentPerCategoryXPerDay: v.writeItemsToCSV(file_tableSpentPerCategoryXPerDay, ["Date", "Spent"], tableSpentPerCategoryXPerDay)
+
+def calculate_Spent_for_Categories_over_years(market):
+    # Get the years of data
+    years = []
+    dir_csv_results_for_graphs = os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market)
+    for filename in sorted(os.listdir(dir_csv_results_for_graphs), reverse=False):
+        if v.file_graph_Spent_per_Month in filename:
+            years.append(filename[:4])
+
+    # Get the categories
+    file_unique_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_unique_categories)
+    categories = v.readCSV(file_unique_categories)[1]
+    
+    # Calculate through all the years and categories
+    if years and categories:
+        for category in categories:
+            for year in years:
+                calculate_Spent_for_Category_x_per_Year(year, market, category[0])
+
+
+
 ## helper functions ##
 def getUniqueCategories(market):
     unique_categories = set()
@@ -80,7 +112,7 @@ def getUniqueCategories(market):
     
     return sorted(unique_categories)
 
-def getSpentPerTime(market, year, time):
+def getSpentPerTime(market, year, time, data=None):
     """
       Use "Month" or "Day" for time argument
 
@@ -92,7 +124,8 @@ def getSpentPerTime(market, year, time):
         b. date changed, new new entry in table
     """
     file_enriched_receipts = os.path.join(v.dir_data, v.dir_CSV_results, market, year + "_"+ v.file_enriched_receipts)
-    enrichedReceiptsRows = v.readCSV(file_enriched_receipts)[1]
+    if(data is None): enrichedReceiptsRows = v.readCSV(file_enriched_receipts)[1]
+    else: enrichedReceiptsRows = data
     table_Spent_Per_Time = []
     if time == "Month": dateToCheck = "1970-01"
     elif time == "Day": dateToCheck = "1970-01-01"
@@ -118,5 +151,5 @@ def getSpentPerTime(market, year, time):
             elif time == "Day": dateToCheck = row[3]
             spentPerTime = row[5]
 
-    table_Spent_Per_Time.pop(0) # to remove default value of 1970-01
+    if table_Spent_Per_Time: table_Spent_Per_Time.pop(0) # to remove default value of 1970-01
     return table_Spent_Per_Time

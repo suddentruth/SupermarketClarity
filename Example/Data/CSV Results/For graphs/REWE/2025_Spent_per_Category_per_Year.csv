@@ -7,8 +7,8 @@ Coffee,6.58
 Cola,18.73
 Dairy,15.41
 Dairy Replacement,6.32
-Discount,0
-Fruit,12.66
+Discount,-0.38
+Fruit,12.67
 Hygiene,14.14
 Lentils,0
 Oil,5.7
@@ -20,5 +20,5 @@ Snacks,81.16
 Spices,0
 Supplement,27.5
 Tea,17.94
-Vegetables,94.55
+Vegetables,94.93
 Yoghurt-Meal,339.48

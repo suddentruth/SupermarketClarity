@@ -60,6 +60,7 @@ if __name__ == "__main__":
             remove_directory(os.path.join(v.dir_data, v.dir_CSV_extracts, market))
             remove_directory(os.path.join(v.dir_data, v.dir_CSV_results, market))
             remove_directory(os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market))
+            remove_directory(os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, v.dir_for_categories, market))
             remove_directory(os.path.join(v.dir_graph_images, market))
         except:
             sys.exit(f"{v.RED}Error: First argument must be a valid supermarket name. Check following list:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}")
