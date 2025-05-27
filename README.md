@@ -30,6 +30,8 @@ Once your Python is setup you only need to install [Pandas](https://pandas.pydat
 
 If you require the support of PNGs you need to install [Tesseract-OCR](https://github.com/tesseract-ocr/tesseract?tab=readme-ov-file#installing-tesseract) and the python wrapper for it [TesserOCR](https://github.com/sirfz/tesserocr) via ``pip install tesserocr``.  If you install "Tesseract-OCR" not via Homebrew on MacOS you may need to adapt the path of the variable ``tesseract_training_data`` in [script_value.py](/Scripts/script_values.py) file.
 
+If you want to get the dayplots like in this [example](Example/Graphs/REWE/Over_Years_per_category_Spent_per_Category_per_Year.csv.png) you need to install [Dayplot](https://josephbarbierdarnal.github.io/dayplot/) via ``pip install dayplot``.
+
 
 ## How to use it
 There are only two scripts for you two execute.
