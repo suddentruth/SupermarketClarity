@@ -12,7 +12,7 @@ def extract_unique_items(year, market):
     unique_items = set()  # Use a set to efficiently store unique item names
     item_list = [] # List to hold unique items for writing to csv
 
-    file_merged_receipts = os.path.join(v.dir_data, v.dir_CSV_results, market, year + "_" + v.file_merged_receipts)
+    file_merged_receipts = os.path.join(v.dir_base_CSV_results, market, year + "_" + v.file_merged_receipts)
     rows = v.readCSV(file_merged_receipts)[1]
 
     # row[0] is item_name
@@ -22,5 +22,5 @@ def extract_unique_items(year, market):
             item_list.append([row[0]]) # Add the entire row to the list
 
     # Write data to CSV file
-    file_unique_items = os.path.join(v.dir_data, v.dir_CSV_results, market, year + "_" + v.file_unique_items)
+    file_unique_items = os.path.join(v.dir_base_CSV_results, market, year + "_" + v.file_unique_items)
     if item_list: v.writeItemsToCSV(file_unique_items, ["item"], item_list)

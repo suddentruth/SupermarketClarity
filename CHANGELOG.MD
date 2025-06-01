@@ -1,6 +1,10 @@
+v0.4.2
++ Refactored rest of the code
++ Added parallelization of extracting CSV from PDF/PNG files and loading data for "Over_Years_per_category_Spent_per_Category_per_Year.csv.png" plot and function "calculate_Spent_for_Categories_over_years"
+
 v0.4.1
 + Added requirements.txt file for easier installation of dependencies
-+ Refactored and umproved regex detection in step 01.
++ Refactored and improved regex detection in step 01.
 
 v0.4.0
 + Added dayplot (heatmap) graphs for individual categories but also all categories over all years.

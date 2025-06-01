@@ -47,7 +47,7 @@ if __name__ == "__main__":
         exit()
 
     if len(sys.argv) == 0:
-        sys.exit(f"{v.RED}Provide name of one supported market:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}.")
+        sys.exit(f"{v.RED}Provide name of one supported market:{v.RESET}\n{v.BLUE}{v.markets.values()}{v.RESET}.")
     
 
     if len(sys.argv) > 1:
@@ -55,7 +55,7 @@ if __name__ == "__main__":
             market = sys.argv[1]
             print(f"Received second argument for supermarket: {v.BLUE}{market}{v.RESET}")
             if market not in v.markets:
-                sys.exit(f"{v.RED}Market must be supported. Check following list:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}")
+                sys.exit(f"{v.RED}Market must be supported. Check following list:{v.RESET}\n{v.BLUE}{v.markets.values()}{v.RESET}")
             remove_directory(os.path.join(v.dir_your_receipts, market))
             remove_directory(os.path.join(v.dir_data, v.dir_CSV_extracts, market))
             remove_directory(os.path.join(v.dir_data, v.dir_CSV_results, market))
@@ -63,7 +63,7 @@ if __name__ == "__main__":
             remove_directory(os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, v.dir_for_categories, market))
             remove_directory(os.path.join(v.dir_graph_images, market))
         except:
-            sys.exit(f"{v.RED}Error: First argument must be a valid supermarket name. Check following list:{v.RESET}\n{v.BLUE}{v.markets}{v.RESET}")
+            sys.exit(f"{v.RED}Error: First argument must be a valid supermarket name. Check following list:{v.RESET}\n{v.BLUE}{v.markets.values()}{v.RESET}")
    
 
     print(f"{v.GREEN}done{v.RESET}")

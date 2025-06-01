@@ -75,7 +75,7 @@ def extract_receipt_data(pdf_file, csv_file, year, market):
                 else: print(f"{v.BLUE}No market provided or unknown market. :( Create a features request.{v.RESET}")
                  
                 # Write data to CSV file
-                csv_file_added_date = os.path.join(v.dir_data, v.dir_CSV_extracts, market, f"{dateFormated}_{csv_file}")
+                csv_file_added_date = os.path.join(v.dir_base_CSV_extracts, market, f"{dateFormated}_{csv_file}")
                 if items and market: v.writeItemsToCSV(csv_file_added_date, ['Item Name', 'Price', 'Quantity', 'Date'], items)
     except FileNotFoundError:
         print(f"Error: PDF file not found at {pdf_file}")

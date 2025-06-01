@@ -5,8 +5,17 @@ import os
 import numpy as np
 import dayplot as dp
 
+# Library amd function to parallelize the loading of dataframes
+from concurrent.futures import ThreadPoolExecutor
+def load_dataframe(args):
+    category, year, file_table, dummy = args
+    if os.path.exists(file_table):
+        return ((category, year), pd.read_csv(file_table))
+    else:
+        return ((category, year), dummy)
+
 def create_graph_Spent_per_Day(year, market):
-    df = pd.read_csv(f"{os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market, year + "_" + v.file_graph_Spent_per_Day)}")
+    df = pd.read_csv(f"{os.path.join(v.dir_base_for_graphs, market, year + "_" + v.file_graph_Spent_per_Day)}")
     df['Date'] = df['Date'].astype(str)
     dfBackground = pd.DataFrame({
         'Date': [f'{year}-01-01', f'{year}-12-31'],
@@ -30,7 +39,7 @@ def create_graph_Spent_per_Day(year, market):
     plt.savefig(f"{os.path.join(v.dir_graph_images, market, year+"_"+v.file_graph_Spent_per_Day+".png")}" , bbox_inches='tight')
 
 def create_graph_Spent_per_Month(year, market):
-    df = pd.read_csv(f"{os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market, year + "_" + v.file_graph_Spent_per_Month)}")
+    df = pd.read_csv(f"{os.path.join(v.dir_base_for_graphs, market, year + "_" + v.file_graph_Spent_per_Month)}")
     # Add start and end of year to data set if not already given.
     df['Date'] = df['Date'].astype(str)
     dfBackground = pd.DataFrame({
@@ -56,11 +65,11 @@ def create_graph_Spent_per_Month(year, market):
 
 def create_graph_Spent_per_Category_per_Month(year, market):
     ### FIRST PLOT ###
-    df = pd.read_csv(f"{os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market, year + "_" + v.file_graph_Spent_per_Category_per_Month)}")
+    df = pd.read_csv(f"{os.path.join(v.dir_base_for_graphs, market, year + "_" + v.file_graph_Spent_per_Category_per_Month)}")
     df['Date'] = pd.to_datetime(df['Date'],format="%Y-%m") #remove year
     df = df.pivot(index='Date', columns='Category', values='Spent')
     
-    df.to_csv(f"{os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market, year + "_" + v.file_graph_Spent_per_Category_per_Month_pivoted)}")
+    df.to_csv(f"{os.path.join(v.dir_base_for_graphs, market, year + "_" + v.file_graph_Spent_per_Category_per_Month_pivoted)}")
 
     # Change linestyle after 10 categories because then the color repeats
     linestyles = ['solid', 'dashed', 'dashdot', 'dotted'] # linestyles for better readability of graph
@@ -120,7 +129,7 @@ def create_graph_Spent_per_Category_per_Month(year, market):
 
 
 def create_graph_Spent_per_Category_per_Year(year, market):
-    df = pd.read_csv(f"{os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market, year + "_" + v.file_graph_Spent_per_Category_per_Year)}")
+    df = pd.read_csv(f"{os.path.join(v.dir_base_for_graphs, market, year + "_" + v.file_graph_Spent_per_Category_per_Year)}")
 
     plt.figure(figsize=(12, 6))
     fig, ax = plt.subplots()
@@ -139,7 +148,7 @@ def create_graph_Spent_per_Category_per_Year(year, market):
 
 def create_graph_Spent_per_Month_over_Years(market):
     dfs = []
-    dir_csv_results_for_graphs = os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market)
+    dir_csv_results_for_graphs = os.path.join(v.dir_base_for_graphs, market)
     for filename in sorted(os.listdir(dir_csv_results_for_graphs), reverse=False):
         if v.file_graph_Spent_per_Month in filename:
             filepath = os.path.join(dir_csv_results_for_graphs, filename)
@@ -164,7 +173,7 @@ def create_graph_Spent_per_Month_over_Years(market):
     plt.savefig(f"{os.path.join(v.dir_graph_images, market, v.file_graph_Spent_per_Month_over_Years+".png")}", bbox_inches='tight')
 
 def create_graph_Spent_for_Category_per_Year(year, market, category):
-    file_tableSpentPerCategoryXPerDay = os.path.join(v.dir_data,v.dir_CSV_results,v.dir_for_graphs,v.dir_for_categories,market,year+"_"+category+"_"+v.file_graph_Spent_per_Category_per_Year)
+    file_tableSpentPerCategoryXPerDay = os.path.join(v.dir_base_for_categories,market,year+"_"+category+"_"+v.file_graph_Spent_per_Category_per_Year)
     df = pd.read_csv(file_tableSpentPerCategoryXPerDay)
     
     fig, ax = plt.subplots(figsize=(15,6))
@@ -189,57 +198,48 @@ def create_graph_Spent_for_Category_per_Year(year, market, category):
 def create_graph_Spent_for_Category(market):
     
     # Get the years of data
-    years = []
-    dir_csv_results_for_graphs = os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market)
-    for filename in sorted(os.listdir(dir_csv_results_for_graphs), reverse=False):
-        if v.file_graph_Spent_per_Month in filename:
-            years.append(filename[:4])
+    dir_csv_results_for_graphs = os.path.join(v.dir_base_for_graphs, market)
+    years = sorted({filename[:4] for filename in os.listdir(dir_csv_results_for_graphs) if v.file_graph_Spent_per_Month in filename})
+    file_unique_categories = os.path.join(v.dir_base_CSV_results, market, market+"_"+v.file_unique_categories)
+    categories = [row[0] for row in v.readCSV(file_unique_categories)[1]]
 
-    # Get the categories
-    file_unique_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_unique_categories)
-    categories = v.readCSV(file_unique_categories)[1]
+    # Preload all dataframes
+    dataframes = {}
+    dummyframes = {year: pd.DataFrame(data={'Date': [f"{year}-01-01", f"{year}-12-31"], 'Spent': [0, 0]}) for year in years}
+    # Prepare arguments for parallel loading
+    load_args = []
+    for category in categories:
+        for year in years:
+            file_table = os.path.join(
+                v.dir_base_for_categories, market,
+                f"{year}_{category}_{v.file_graph_Spent_per_Category_per_Year}"
+            )
+            load_args.append((category, year, file_table, dummyframes[year]))
+
+    # Parallel load of dataframes from CSV files
+    dataframes = {}
+    with ThreadPoolExecutor() as executor:
+        for key, df in executor.map(load_dataframe, load_args):
+            dataframes[key] = df
 
     # Plot creation
-    left_side_category_text_args = dict(
-        x=-5, y=3, size=50, rotation='vertical', va="center", ha="center" # values are estimate through trying
+    fig, axs = plt.subplots(
+        figsize=(15 * max(1, len(years)), 6 * max(1, len(categories))),
+        nrows=len(categories), ncols=len(years),
+        squeeze=False
     )
-    top_side_year_text_args = dict(
-        x=26, y=-3.5, size=50, ha="center"
-    )
-
-
-    fig, axs = plt.subplots(figsize=(15*(len(years)+2),6*len(categories)) ,nrows=len(categories), ncols=len(years))
     # Check this page for other, better colors: https://matplotlib.org/stable/users/explain/colors/colormaps.html
     cmap = plt.cm.copper
 
+    # Set figure title
     fig.suptitle("Spent Money per Category per Day over Years", fontsize=55 , y=1.005)
-    for category in categories:
-        for year in years:
-            file_tableSpentPerCategoryXPerDay = os.path.join(v.dir_data,v.dir_CSV_results,v.dir_for_graphs,v.dir_for_categories,market,year+"_"+category[0]+"_"+v.file_graph_Spent_per_Category_per_Year)
-            
-            # Handle not file available
-            if os.path.exists(file_tableSpentPerCategoryXPerDay):
-                df = pd.read_csv(file_tableSpentPerCategoryXPerDay)
-            else:
-                df = pd.DataFrame(data={'Date': [f"{year}-01-01", f"{year}-12-31"], 'Spent': [0, 0]})
-            
-            # Ensure the access the subplots correctly
-            if len(categories) > 1 and len(years) > 1:
-                ax = axs[categories.index(category), years.index(year)]
-            elif len(categories) > 1 and len(years) == 1:
-                ax = axs[categories.index(category)]
-            elif len(categories) == 1 and len(years) > 1:
-                ax = axs[years.index(year)]
-            elif len(categories) == 1 and len(years) == 1:
-                ax = axs
-            
-            # Transform long category names into multiple lines
-            if years.index(year) == 0:
-                splittedCategories = category[0].replace(" ","\n").replace("-","\n")
-                ax.text(s=f"{splittedCategories}", **left_side_category_text_args)
-            if categories.index(category) == 0:
-                ax.text(s=f"{year}", **top_side_year_text_args)
-            
+    for i, category in enumerate(categories):
+        for j, year in enumerate(years):
+            df = dataframes[(category, year)]
+            ax = axs[i, j]
+            # Subplot title: category and year
+            ax.set_title(f"{category}\n{year}", fontsize=30)
+
             dp.calendar(
                 dates=df['Date'],
                 values=df['Spent'],
@@ -254,7 +254,10 @@ def create_graph_Spent_for_Category(market):
             cb = fig.colorbar(heatmap,ax=ax)
             # if not os.path.exists(file_tableSpentPerCategoryXPerDay): cb.remove() # doesn't work out as wanted. If last row contains no data for a year it will not be shown.
     
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.97])  # Leave space for suptitle
     
     # plt.show()
-    plt.savefig(f"{os.path.join(v.dir_graph_images, market, "Over_Years_per_category_"+v.file_graph_Spent_per_Category_per_Year+".png")}", bbox_inches='tight')
+    plt.savefig(
+        os.path.join(v.dir_graph_images, market, "Over_Years_per_category_"+v.file_graph_Spent_per_Category_per_Year+".png"),
+        bbox_inches='tight'
+    )

@@ -15,6 +15,24 @@ import Scripts.step_08_create_graphs as cg
 
 from tesserocr import PyTessBaseAPI
 
+# lib and function to parallelize the pdf extraction
+from concurrent.futures import ThreadPoolExecutor
+def extract_pdf_to_csv(pdf, market, year):
+    csv_file = pdf.replace("pdf", "csv")
+    pdf_file = os.path.join(v.dir_your_receipts, market, pdf)
+    step_01.extract_receipt_data(pdf_file, csv_file, year, market)
+
+def png_to_pdf_ocr(png, market):
+    png_file = os.path.join(v.dir_your_receipts, market, png)
+    pdf_file = png_file.replace(".png", ".pdf")
+    with PyTessBaseAPI(path=v.tesseract_training_data, lang="deu") as api:
+        api.SetImageFile(png_file)
+        text = api.GetUTF8Text()
+        try:
+            with open(pdf_file, 'w', newline='', encoding='utf-8') as file:
+                file.write(text)
+        except Exception as e:
+            print(f"An error occurred while writing to the output file: {e} \n{v.BLUE}File path: {pdf_file}{v.RESET}")
 
 def create_directory(dir_name):
     """Creates a directory if it doesn't exist and returns True on success, False otherwise."""
@@ -40,13 +58,16 @@ if __name__ == "__main__":
             print(f"Received second argument for supermarket: {v.BLUE}{market}{v.RESET}")
             if market not in v.markets:
                 sys.exit(f"{v.RED}Market must be supported. Check following list:{v.RESET}\n{v.BLUE}{v.markets.values()}{v.RESET}")
-
-            create_directory(os.path.join(v.dir_your_receipts, market))
-            create_directory(os.path.join(v.dir_data, v.dir_CSV_extracts, market))
-            create_directory(os.path.join(v.dir_data, v.dir_CSV_results, market))
-            create_directory(os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market))
-            create_directory(os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, v.dir_for_categories, market))
-            create_directory(os.path.join(v.dir_graph_images, market))
+            dirs_to_create = [
+                os.path.join(v.dir_your_receipts, market),
+                os.path.join(v.dir_data, v.dir_CSV_extracts, market),
+                os.path.join(v.dir_data, v.dir_CSV_results, market),
+                os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, market),
+                os.path.join(v.dir_data, v.dir_CSV_results, v.dir_for_graphs, v.dir_for_categories, market),
+                os.path.join(v.dir_graph_images, market)
+            ]
+            for d in dirs_to_create:
+                create_directory(d)
         except:
             sys.exit(f"{v.RED}Error: First argument must be a valid supermarket name. Check following list:{v.RESET}\n{v.BLUE}{v.markets.values()}{v.RESET}")
     else:
@@ -87,27 +108,16 @@ if __name__ == "__main__":
     # Not beautiful but it works.
     if market == v.markets.get("LIDL") or market == v.markets.get("Müller"):
         print("Step 0")
-        allPNGs = []
-        allFiles = os.listdir(os.path.join(v.dir_your_receipts,market))
-        allFiles = list(filter(lambda file: not file.startswith("."), allFiles)) # exclude system files that start with '.'.
+        allFiles = os.listdir(os.path.join(v.dir_your_receipts, market))
+        allFiles = [file for file in allFiles if not file.startswith(".")]
         if len(allFiles) == 0:
             sys.exit(f"{v.BLUE}First time run.\nCopy your receipts into this directory '{os.path.join(v.dir_your_receipts,market)}'.\nThen run the script again!{v.RESET}")
 
-        for file in allFiles:
-            if ".png" in file:
-                allPNGs.append(file)
-        
-        for png in allPNGs:
-            png_file = os.path.join(v.dir_your_receipts, market, png)
-            pdf_file = png_file.replace(".png",".pdf")
-            with PyTessBaseAPI(path=v.tesseract_training_data, lang="deu") as api: # Assuming only German language for better detection
-                api.SetImageFile(png_file)
-                text = api.GetUTF8Text()
-                try:
-                    with open(pdf_file, 'w', newline='', encoding='utf-8') as file:
-                        file.write(text)
-                except Exception as e:
-                    print(f"An error occurred while writing to the output file: {e} \n{v.BLUE}File path: {pdf_file}{v.RESET}")
+        allPNGs = [file for file in allFiles if ".png" in file]
+        with ThreadPoolExecutor() as executor:
+            futures = [executor.submit(png_to_pdf_ocr, png, market) for png in allPNGs]
+            for future in futures:
+                future.result()
 
     # 01 - Convert original receipts from pdf to csv files
     print("Step 1")
@@ -115,15 +125,12 @@ if __name__ == "__main__":
     allFiles = list(filter(lambda file: not file.startswith("."), allFiles)) # exclude system files that start with '.'.
     if len(allFiles) == 0:
         sys.exit(f"{v.BLUE}First time run.\nCopy your receipts into this directory '{os.path.join(v.dir_your_receipts,market)}'.\nThen run the script again!{v.RESET}")
-    allPDFs = []
-    for file in allFiles:
-        if ".pdf" in file:
-            allPDFs.append(file)
-
-    for pdf in allPDFs:
-        csv_file = pdf.replace("pdf", "csv")
-        pdf_file = os.path.join(v.dir_your_receipts, market, pdf)
-        step_01.extract_receipt_data(pdf_file, csv_file, year, market)
+    
+    allPDFs = [file for file in allFiles if ".pdf" in file]
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(extract_pdf_to_csv, pdf, market, year) for pdf in allPDFs]
+        for future in futures:
+            future.result()
     
     # 02 - Merge CSVs receipts to x_merged_receipts where x is the year
     print("Step 2")

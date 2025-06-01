@@ -9,7 +9,7 @@ def merge_known_categories_with_unique_items(year, market):
     category_dictionary = {}
 
     ### Handle Categories ###
-    file_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, market+"_"+v.file_complete_items_categories)
+    file_categories = os.path.join(v.dir_base_CSV_results, market, market+"_"+v.file_complete_items_categories)
     # to ensure category file exists always, even if only containing the header row
     if not os.path.exists(file_categories): v.writeItemsToCSV(file_categories,["item","category"],[])
     
@@ -19,7 +19,7 @@ def merge_known_categories_with_unique_items(year, market):
         category_dictionary[row[0]] = row[1]
 
     ### Handle Unique items
-    file_unique_items = os.path.join(v.dir_data, v.dir_CSV_results, market, year + "_" + v.file_unique_items)
+    file_unique_items = os.path.join(v.dir_base_CSV_results, market, year + "_" + v.file_unique_items)
     uniqueRows = v.readCSV(file_unique_items)[1]
     # row[0] is item_name
     for row in uniqueRows:
@@ -27,5 +27,5 @@ def merge_known_categories_with_unique_items(year, market):
 
     ### Write merged info ###
     # Write data to CSV file
-    file_merged_items_and_categories = os.path.join(v.dir_data, v.dir_CSV_results, market, year + "_" + v.file_unique_items_and_categories_merged)
+    file_merged_items_and_categories = os.path.join(v.dir_base_CSV_results, market, year + "_" + v.file_unique_items_and_categories_merged)
     if item_list: v.writeItemsToCSV(file_merged_items_and_categories, ["item", "category"], item_list)

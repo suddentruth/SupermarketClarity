@@ -16,6 +16,14 @@ dir_for_graphs = "For graphs"
 dir_for_categories = "For categories"
 dir_graph_images = "Graphs"
 
+
+# the main directories
+import os
+dir_base_CSV_extracts = os.path.join(dir_data, dir_CSV_extracts)
+dir_base_CSV_results = os.path.join(dir_data, dir_CSV_results)
+dir_base_for_graphs = os.path.join(dir_data, dir_CSV_results, dir_for_graphs)
+dir_base_for_categories = os.path.join(dir_data, dir_CSV_results, dir_for_graphs, dir_for_categories)
+
 # file names for data extraction and processing to tables
 file_merged_receipts = "merged_receipts.csv"
 file_unique_items = "unique_items.csv"
@@ -69,6 +77,7 @@ def readCSV(file_path):
             return header, rows
     except Exception as e:
         print(f"Error reading CSV file: {e}\n{BLUE}File path: {file_path}{RESET}")
+        return None, []
 
 def readLinesFromFakePDF(file_path):
     try:
@@ -78,7 +87,8 @@ def readLinesFromFakePDF(file_path):
                 lines.append(line.strip())
             return lines
     except Exception as e:
-        print(f"Error reading png to pdf converted file while extracing data. File: {e}\n{v.BLUE}File path: {file_path}{v.RESET}")
+        print(f"Error reading png to pdf converted file while extracing data. File: {e}\n{BLUE}File path: {file_path}{RESET}")
+        return []
 
 def readTextFromFakePDF(file_path):
     # Special handling for png files. Using reader as pdf_file string
@@ -89,6 +99,6 @@ def readTextFromFakePDF(file_path):
                 text += line
             return text
     except Exception as e:
-        print(f"Error reading png to pdf converted when getting the date. File: {e}\n{v.BLUE}File path: {file_path}{v.RESET}")
-
+        print(f"Error reading png to pdf converted when getting the date. File: {e}\n{BLUE}File path: {file_path}{RESET}")
+        return ""
     
