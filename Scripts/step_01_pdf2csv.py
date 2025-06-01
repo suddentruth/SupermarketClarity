@@ -4,6 +4,39 @@ import os
 import Scripts.script_values as v
 import dateutil.parser as parser
 
+FIELD_MAPS = {
+    "Default": {
+        "full":        {'name': 'name', 'price': 'price', 'quantity': 'qty'},
+        "no_name":     {'price': 'price', 'quantity': 'qty'},
+        "no_quantity": {'name': 'name', 'price': 'price'}
+    },
+    "Special": {
+        "no_name_plus_total":  {'price': 'price', 'quantity': 'qty', 'total': 'total'},
+        "pure_name":           {'name': 'name'},
+        "barcode_name":        {'name': 'name', 'barcode': 'barcode'}
+    }
+}
+
+POST_PROCESSING_MAPS = {
+    "name_from_last_item": lambda i, items: {
+        'name': items.pop()[0] if items else "",
+        'price': i['price'],
+        'quantity': i['quantity']
+    },
+    "calculate_price_from_weight": lambda i, items=None: {
+        'name': i['name'],
+        'price': round(parse_float(i['price']) / parse_float(i['quantity']), 2),
+        'quantity': i['quantity']
+    },
+    "name_from_last_item_negative_total": lambda i, items: {
+        'name': items.pop()[0] if items else "",
+        'price': -parse_float(i['price']) if parse_float(i['total']) < 0 else parse_float(i['price']),
+        'quantity': i['quantity']
+    },
+    "barcode_name": lambda i, items=None: {
+        'name': i['barcode'] + " " + i['name']
+    }
+}
 
 def extract_receipt_data(pdf_file, csv_file, year, market):
     """
@@ -14,6 +47,15 @@ def extract_receipt_data(pdf_file, csv_file, year, market):
         pdf_file (str): Path to the PDF receipt file, like "Your Receipts/{Market}"
         csv_file (str): Path to the output CSV file, like "Data/CSV Extracts/{Market}"
     """
+    market_processors = {
+        "REWE": processDataFromReweReceipts,
+        "EDEKA": processDataFromEdekaReceipts,
+        "DM": processDataFromDMReceipts,
+        "LIDL": processDataFromLIDLReceipts,
+        "Kaufland": processDataFromKauflandReceipts,
+        "Müller": processDataFromMüllerReceipts,
+        "OBI": processDataFromOBIReceipts,
+    }
     try:
         with open(pdf_file, 'rb') as f:
             items = []
@@ -28,24 +70,10 @@ def extract_receipt_data(pdf_file, csv_file, year, market):
             dateFormated = date.strftime("%Y-%m-%d")
             
             if date and date.year == int(year):
-                match market:
-                    case "REWE":
-                        items = processDataFromReweReceipts(reader, dateFormated)
-                    case "EDEKA":
-                        items = processDataFromEdekaReceipts(reader, dateFormated)
-                    case "DM":
-                        items = processDataFromDMReceipts(reader, dateFormated)
-                    case "LIDL":
-                        items = processDataFromLIDLReceipts(reader, dateFormated)
-                    case "Kaufland":
-                        items = processDataFromKauflandReceipts(reader, dateFormated)
-                    case "Müller":
-                        items = processDataFromMüllerReceipts(reader, dateFormated)
-                    case "OBI":
-                        items = processDataFromOBIReceipts(reader, dateFormated)
-                    case _:
-                        print(f"{v.BLUE}No market provided or unknown market. :( Create a features request.{v.RESET}")
-
+                processor = market_processors.get(market)
+                if processor: items = processor(reader, dateFormated)
+                else: print(f"{v.BLUE}No market provided or unknown market. :( Create a features request.{v.RESET}")
+                 
                 # Write data to CSV file
                 csv_file_added_date = os.path.join(v.dir_data, v.dir_CSV_extracts, market, f"{dateFormated}_{csv_file}")
                 if items and market: v.writeItemsToCSV(csv_file_added_date, ['Item Name', 'Price', 'Quantity', 'Date'], items)
@@ -72,6 +100,8 @@ def extract_date(reader, year, isPNGFile):
     if isPNGFile: num_pages = 1
     else: num_pages = len(reader.pages)
 
+    patterns = [r"(\d{4}-\d{2}-\d{2})", r"(\d{2}\.\d{2}\.\d{4})", r"(\d{1,2}\.\d{1,2}\.\d{2,4})"]
+
     # Go through all pages to identify date
     for page_num in range(num_pages):
         text = ""
@@ -82,7 +112,6 @@ def extract_date(reader, year, isPNGFile):
             page = reader.pages[page_num]
             text = page.extract_text()
 
-        patterns = [r"(\d{4}-\d{2}-\d{2})", r"(\d{2}\.\d{2}\.\d{4})", r"(\d{1,2}\.\d{1,2}\.\d{2,4})"]
         for pattern in patterns:
             date_match = re.search(pattern, text)
             if date_match != None:
@@ -99,71 +128,102 @@ def extract_date(reader, year, isPNGFile):
         
     return dt.strptime("1970-01-01",'%Y-%m-%d') # no valid date found
 
+def parse_float(value: str) -> float:
+    """
+    Parses a string value to a float, replacing commas with dots.
+    If the value cannot be converted, returns 0.0.
+    """
+    try:
+        if isinstance(value, str):
+            return float(value.replace(',', '.'))
+        return value
+    except ValueError:
+        return 0.0
+
+def should_process_line(line, state, start_marker_pattern=None , end_marker=None):
+    """
+    Determines whether a line should be processed based on the current state and markers.
+    Args:
+        line (str): The line of text to evaluate.
+        state (dict): A dictionary containing the current state of processing.
+        start_marker_pattern (str): A regex pattern to identify the start of the item list.
+        end_marker (str): A string that indicates the end of the item list.
+    Returns:
+        bool: True if the line should be processed, False otherwise.
+    """
+    if not state["skippedIntroduction"]:
+        if start_marker_pattern and re.search(start_marker_pattern, line):
+            state["skippedIntroduction"] = True
+        return False
+    if end_marker and end_marker in line:
+        state["skipRest"] = True
+        return False
+    return True
+
+def try_append_item(field_map, line, pattern, items, date, post_process=None):
+    match = pattern.search(line.strip())
+    if match:
+        # Extract fields using the field_map (dict: output_field -> regex group)
+        item = {k: match.group(v).strip() for k, v in field_map.items()}
+        # Optionally post-process fields e.g. to pop a name from a preivious item
+        if post_process:
+            item = post_process(item, items)
+        
+        item['name'] = item.get('name', '').strip()  # Ensure name is a string and stripped
+        item['price'] = parse_float(item.get('price', '0.0'))  # Ensure price is a float
+        item['quantity'] = parse_float(item.get('quantity', '1'))  # Ensure quantity is a float, default to 1
+        item['date'] = date # Always add date
+        
+        items.append([item.get('name', ''), item.get('price', 0.0), item.get('quantity', 1), item['date']])
+        return True
+    return False
+
 def processDataFromReweReceipts(reader, date):
     """
     Method for REWE to get items from PDF file into CSV file.
     1. We skip the header up to the first sign ("EUR") that the item list will begin.
-    2. If our search result of two groups (first the item name, second the price) contains "SUMME" we stop further processing and write the gathered data into the list.
-    3. If we buy higher quantities of the same item we detect it by "Stk"
+    2. If we detect "SUMME" we stop further processing and write the gathered data into the list.
+    3. If we buy something from the meat counter, we detect it by "Handeingabe"
     4. If we buy unpackaged food that will be weighted, we detect this by "kg x"
-    5. If we buy something from the meat counter, we detect it by "Handeingabe"
+    5. If we buy higher quantities of the same item we detect it by "Stk"
+    6. Otherwise we have a normale entry of item name and price
     """
     items = []  # List to store extracted item data (name, price, quantity, date)
-    page_num = 0
     num_pages = len(reader.pages)
-    skippedIntroduction = False
-    skipRest = False
+    state = {"skippedIntroduction": False, "skipRest": False}
+    start_marker_pattern = r"EUR"
+    end_marker = "SUMME"
+
+    weighted_pattern = re.compile(r"^(?P<qty>\d+,\d+)\s*kg\s*x\s*(?P<price>\d+,\d{2})\s*EUR/kg") # e.g. "0,368 kg x 14,90 EUR/kg"
+    counted_pattern = re.compile(r"^(?P<qty>\d+)\s*Stk\s*x\s*(?P<price>\d+,\d{2})") # e.g. "2 Stk x 1,29"
+    item_pattern = re.compile(r"^(?P<name>.+?)\s+(?P<price>[-\d]+,\d{2})\s*[AB]?\s*\*?$") # e.g. "TomateCherrysüß 5,48 A*"
 
     for page_num in range(num_pages):
         page = reader.pages[page_num]
         text = page.extract_text()
         lines = text.split('\n')
-        if skipRest == True: break
+        if state["skipRest"]: break
 
         for line in lines:
             # Matches the text before the first item and after the last item
-            if "EUR" in line and not skippedIntroduction:
-                skippedIntroduction = True
-            if "SUMME" in line:
-                skipRest = True
-                break
+            if not should_process_line(line, state, start_marker_pattern, end_marker):
+                if state["skipRest"]: break
+                continue
 
-            # Try to match items
-            item_match = re.search(r"([A-Za-z0-9\s\S]+)\s+([-\d,\.]+)", line)  # Matches item name and price
-            if item_match and skippedIntroduction:
-                item_name = item_match.group(1).strip()
-                price = float(item_match.group(2).replace(',', '.')) 
-                quantity = 1  # Default quantity
+            if "Handeingabe" in line: continue # when you get food from the meat counter, skip this line
+            
+            # Weighted items (kg x)
+            if try_append_item(FIELD_MAPS["Default"]["no_name"], line, weighted_pattern, items, date,
+                POST_PROCESSING_MAPS["name_from_last_item"]
+            ):continue
 
-                if "Stk x" in line:
-                    try:
-                        quantity_match = re.search(r"(\d+)\s*Stk", line)
-                        if quantity_match:
-                            quantity = int(quantity_match.group(1))
-                            cache_item = items.pop()
-                            item_name = cache_item[0]
+            # Counted items (Stk x)
+            if try_append_item(FIELD_MAPS["Default"]["no_name"], line, counted_pattern, items, date,
+                POST_PROCESSING_MAPS["name_from_last_item"]
+            ):continue
 
-                    except ValueError:
-                        pass
-
-                if "kg x" in line:
-                    try:
-                        quantity_match = re.search(r"(\d+,\d+)\s*kg", line)
-                        if quantity_match:
-                            quantity = float(quantity_match.group(1).replace(',', '.'))
-                            price_match = re.search(r"(\d+,\d+)\sEUR\/kg", line)
-                            if price_match:
-                                price = float(price_match.group(1).replace(',', '.'))
-                                cache_item = items.pop()
-                                item_name = cache_item[0]
-                    except ValueError:
-                        pass
-
-                if "Handeingabe" in line: # when you get food from the meat counter, skip this line
-                    continue
-
-
-                items.append([item_name, price, quantity, date])
+            # Standard item line
+            if try_append_item(FIELD_MAPS["Default"]["no_quantity"], line, item_pattern, items, date):continue
     return items
 
 def processDataFromEdekaReceipts(reader, date):
@@ -172,46 +232,31 @@ def processDataFromEdekaReceipts(reader, date):
     1. We skip the header up to the first sign ("EUR") that the item list will begin.
     2. If our search result of two groups (first the item name, second the price) contains "Posten:" we stop further processing and write the gathered data into the list.
     3. If we buy higher quantities of the same item we detect it by seperating the initial item_name into "Quantity", "Item price" and "Item name"
-    4. We pop the last item if it contains the "Coupon" id.
     """
     items = []  # List to store extracted item data (name, price, quantity, date)
-    page_num = 0
     num_pages = len(reader.pages)
-    skippedIntroduction = False
-    skipRest = False
+    state = {"skippedIntroduction": False, "skipRest": False}
+    start_marker_pattern = r"EUR"
+    end_marker = "Posten:"
+    
+    quantity_pattern = re.compile(r"^(?P<qty>\d+)€\s*x\s*(?P<price>\d+,\d{2})(?P<name>.+?)\s*(\d+,\d{2})([A-Z*]{1,2})$")
+    item_pattern = re.compile(r"^(?P<name>.+?)\s*(?P<price>[-\d]+,\d{2})([A-Z*]{1,2})*$")
 
     for page_num in range(num_pages):
         page = reader.pages[page_num]
         text = page.extract_text()
         lines = text.split('\n')
-        if skipRest == True: break
+        if state["skipRest"]: break
 
         for line in lines:
             # Matches the text before the first item and after the last item
-            if "EUR" in line and not skippedIntroduction:
-                skippedIntroduction = True
-            if "Posten:" in line:
-                skipRest = True
-                break
+            if not should_process_line(line, state, start_marker_pattern, end_marker):
+                if state["skipRest"]: break
+                continue
+            
+            if try_append_item(FIELD_MAPS["Default"]["full"], line, quantity_pattern, items, date):continue
 
-            # Try to match items
-            item_match = re.search(r"([A-Za-z0-9\s\S]+)\s+([-\d,\.]+)", line)  # Matches item name and price
-            if item_match and skippedIntroduction:
-                item_name = item_match.group(1).strip()
-                price = float(item_match.group(2).replace(',', '.'))
-                quantity = 1  # Default quantity
-                
-                quantity_match = re.search(r"(\d)+€ x (\d+.\d{2})([A-Za-z0-9\s\S]+)",item_name) # pattern like "2€ x 4,99SENSOD.ZAHNCREME" gets matched
-                if quantity_match: #item name contains quantity, therefore update variables
-                    quantity = quantity_match.group(1)
-                    price = float(quantity_match.group(2).replace(',', '.'))
-                    item_name = quantity_match.group(3)
-
-                items.append([item_name, price, quantity, date])
-
-    # remove Coupon id entry if exists TODO Maybe also add for other markets later if actually used
-    if items and "Coupon" in items[-1][0]:
-        items.pop()
+            if try_append_item(FIELD_MAPS["Default"]["no_quantity"], line, item_pattern, items, date):continue
     return items
 
 def processDataFromDMReceipts(reader, date):
@@ -220,93 +265,77 @@ def processDataFromDMReceipts(reader, date):
     1. We skip the header up to the first sign ("EUR") that the item list will begin.
     2. If our search result of two groups (first the item name, second the price) contains "Posten:" we stop further processing and write the gathered data into the list.
     3. If we buy higher quantities of the same item we detect it by seperating the initial item_name into "Quantity", "Item price" and "Item name"
-    4. We remove items that got cancelled
     """
     items = []  # List to store extracted item data (name, price, quantity, date)
-    page_num = 0
     num_pages = len(reader.pages)
-    skippedIntroduction = False
-    skipRest = False
+    state = {"skippedIntroduction": False, "skipRest": False}
+    start_marker_pattern = r"(\d{2}\.\d{2}\.\d{4})"
+    end_marker = "SUMME EUR"
+
+    pattern_subtotal = re.compile(r"^(?P<name>Zwischensumme)\s+(?P<price>\d+,\d{2})$")
+    discount_pattern = re.compile(r"^(?P<name>.+?)\s+(?P<price>-?\d+,\d{2})$")
+    quantity_pattern= re.compile(r"^(?P<qty>\d+)x\s*(?P<price>\d+,\d{2})\s+(?P<name>.+?)\s+(\d+,\d{2})\s+(\d+|§\d+)$")
+    item_pattern = re.compile(r"^(?P<name>.+?)\s+(?P<price>[-\d]+,\d{2})\s+(\d+|§\d+)?$")
 
     for page_num in range(num_pages):
         page = reader.pages[page_num]
         text = page.extract_text()
         lines = text.split('\n')
-        if skipRest == True: break
+        if state["skipRest"]: break
 
         for line in lines:
             # Matches the text before the first item and after the last item
-            item_match = re.search(r"(\d{2}\.\d{2}\.\d{4})", line) # Need to use regex since a date is dynamic
-            if item_match and not skippedIntroduction:
-                skippedIntroduction = True
-            if "SUMME EUR" in line:
-                    skipRest = True
-                    break
-            
-            # Try to match items
-            item_match = re.search(r"([A-Za-z0-9\s\S]+)\s+([-\d,\.]+)\s+(\d{1})", line)  # Matches item name and price and taxation group
-            coupon_match = re.search(r"([A-Za-z0-9\s\S]+)\s+([-\d,\.]+)", line)
-            if item_match and skippedIntroduction:                
-                item_name = item_match.group(1).strip()
-                price = float(item_match.group(2).replace(',', '.')) # Handle comma as decimal separator
-                quantity = 1  # Default quantity
+            if not should_process_line(line, state, start_marker_pattern, end_marker):
+                if state["skipRest"]: break
+                continue
 
-                quantity_match = re.search(r"(\d)+x (\d+.\d{2})([A-Za-z0-9\s\S]+)",item_name) # pattern like "2x 0,65 babylove 1J Apf.Ban.Ki" gets matched
-                if quantity_match: #item name contains quantity, therefore update variables
-                    quantity = quantity_match.group(1)
-                    price = float(quantity_match.group(2).replace(',', '.'))
-                    item_name = quantity_match.group(3).strip()
+            # Try to match items            
+            pattern_subtotal_match = pattern_subtotal.search(line.strip())
+            if pattern_subtotal_match: # If we found the subtotal, we can skip this line
+                continue
 
-                # remove item that has been cancelled
-                if price < 0 and items and item_name == items[-1][0]:
-                    items.pop()
-                    continue # and don't add the item again
+            if try_append_item(FIELD_MAPS["Default"]["no_quantity"], line, discount_pattern, items, date):continue
 
-                items.append([item_name, price, quantity, date])
-                
-            elif coupon_match and skippedIntroduction:
-                coupon_name = coupon_match.group(1).strip()
-                price = float(coupon_match.group(2).replace(',','.'))
-                quantity = 1
-                if "Zwischensumme" not in coupon_name:
-                    items.append([coupon_name, price, quantity, date])
+            if try_append_item(FIELD_MAPS["Default"]["full"], line, quantity_pattern, items, date):continue
+
+            if try_append_item(FIELD_MAPS["Default"]["no_quantity"], line, item_pattern, items, date):continue
     return items
 
 def processDataFromLIDLReceipts(reader, date):
     """
         Captures three scenarios, going from specif to coarse and skip the rest if match found
-        1. differentQuantityMatch matched e.g. "Avocado vorger. 1,29 x 2 2,58 A"
-        2. weightedFoodMatch matched e.g. "0,368 kg x 14,90 EUR/kg"
-        3. simplestMatch matched e.g. "TomateCherrysüß 5,48 A"
+        1. weighted pattern matched e.g. "0,368 kg x 14,90 EUR/kg"
+        2. quantity pattern matched e.g. "Avocado vorger. 1,29 x 2 2,58 A"
+        3. item pattern matched e.g. "TomateCherrysüß 5,48 A"
     """
     items = []
     lines = v.readLinesFromFakePDF(reader)
-    skippedIntroduction = False
+    state = {"skippedIntroduction": False, "skipRest": False}
+    start_marker_pattern = r"EUR"
+    end_marker = "zu zahlen"
+
+
+    weighted_pattern = re.compile(r"^(?P<qty>\d+,\d+)\s*kg\s*x\s*(?P<price>\d+,\d{2})\s*EUR\/kg$")
+    quantity_pattern = re.compile(r"^(?P<name>.+?)\s+(?P<price>\d+,\d{2})\s*x\s*(?P<qty>\d+)\s+(?P<total>\d+,\d{2})\s+([A-Z])$")
+    item_pattern = re.compile(r"^(?P<name>.+?)\s+(?P<price>\d+,\d{2})\s+([A-Z])$")
+    # missing discount pattern as not yet having respective receipts to test against
 
     for line in lines:
         # Matches the text before the first item and after the last item
-        if "EUR" in line and not skippedIntroduction:
-            skippedIntroduction = True
-            continue
-        if "zu zahlen" in line:
-            break
-        
-        quantity = "1" # default quantity
-        dQMatch = re.search(r"([A-Za-z0-9\s\S]+)\s+(\d+,\d{2}) x (\d)+ ([-\d,\.]+)",line)
-        if dQMatch and skippedIntroduction:
-            items.append([dQMatch.group(1), dQMatch.group(2).replace(",","."), dQMatch.group(3), date])
+        if not should_process_line(line, state, start_marker_pattern, end_marker):
+            if state["skipRest"]: break
             continue
         
-        wFMatch = re.search(r"(\d+,\d+)([A-Za-z0-9\s\S]+)\s+([-\d,\.]+) (EUR\/kg)", line)        
-        if wFMatch and skippedIntroduction and items:
-            cachedItem = items.pop()
-            items.append([cachedItem[0], wFMatch.group(3).replace(",","."), wFMatch.group(1).replace(",","."), date])
-            continue
+        # Weighted items (kg x)
+        if try_append_item(FIELD_MAPS["Default"]["no_name"], line, weighted_pattern, items, date,
+            POST_PROCESSING_MAPS["name_from_last_item"]
+        ):continue
 
-        sMatch = re.search(r"([A-Za-z0-9\s\S]+)\s+([-\d,\.]+)", line)
-        if sMatch and skippedIntroduction:
-            items.append([sMatch.group(1), sMatch.group(2).replace(",","."), quantity, date])
+        # Quantity items (unit price x qty ...)
+        if try_append_item(FIELD_MAPS["Default"]["full"], line, quantity_pattern, items, date):continue
 
+        # Standard item line
+        if try_append_item(FIELD_MAPS["Default"]["no_quantity"], line, item_pattern, items, date):continue
     return items
 
 def processDataFromKauflandReceipts(reader, date):
@@ -319,67 +348,46 @@ def processDataFromKauflandReceipts(reader, date):
     4. Once we get the next item_name we conclude that the last item has all data set and can be saved and reset the item values to default again
     """
     items = []  # List to store extracted item data (name, price, quantity, date)
-    page_num = 0
     num_pages = len(reader.pages)
+    state = {"skippedIntroduction": False, "skipRest": False}
+    start_marker_pattern = r"Preis EUR"
+    end_marker = "Summe"
+
+    weighted_pattern = re.compile(r"^(?P<name>.+?)\s+(?P<qty>\d+,\d+)\s*kg\s+(?P<price>\d+,\d{2})\s+([A-Z])$")
+    quantity_pattern = re.compile(r"^\s*(?P<qty>\d+)\s*\*\s*(?P<price>\d+,\d{2})\s+(?P<total>-?\d+,\d{2})\s+([A|B])$")    
+    item_or_discount_pattern = re.compile(r"^(?P<name>.+?)\s+(?P<price>[-\d]+,\d{2})")
+    purename_pattern = re.compile(r"(?P<name>.*)$")
+
     for page_num in range(num_pages):
         page = reader.pages[page_num]
         text = page.extract_text()
-        
-        firstSplit = re.split(r"([A-Za-z0-9\s\S]+)Preis EUR\s*", text)
-        secondSplit = re.split(r"Summe", firstSplit[2])
-        textFragments = re.split(r"(?:  )+", secondSplit[0])
+        lines = text.split('\n')
 
-        item_name = ""
-        price = ""
-        quantity = "1"
+        if state["skipRest"]: break
 
+        for line in lines:
+            # Matches the text before the first item and after the last item
+            if not should_process_line(line, state, start_marker_pattern, end_marker):
+                if state["skipRest"]: break
+                continue
+            
+            # Weighted items (name + weight + price + tax)
+            if try_append_item(FIELD_MAPS["Default"]["full"], line, weighted_pattern, items, date,
+                POST_PROCESSING_MAPS["calculate_price_from_weight"]
+            ):continue
 
-        for fragment in textFragments:
-            """
-            validate following case:
-                1. if it contains an '*' split it by the '*', first part is quantiy, second price per unit
-                2. if it is r"-*\\d+,d{2} [A|B]" it is the price or pawn returned
-                    --> use to reset values and save item
-                3. if it is r"-\\d+,d{2}" it is the discount (price)
-                    --> use to reset values and save item
-                4. if it is r"\\d+,\\d+ kg" is the weighted (try to calculated the correct price per unit afterwards)
-                5. otherwise is the item name
-            """
-            priceMatch = re.search(r"-*\d+,\d{2} [A|B]", fragment)
-            discountMatch = re.search(r"-\d+,\d{2}", fragment)
-            weightedMatch = re.search(r"\d+,\d+ kg", fragment)
+            # Quantity items (qty * unit_price ... total ...)
+            if try_append_item(FIELD_MAPS["Special"]["no_name_plus_total"], line, quantity_pattern, items, date,
+                POST_PROCESSING_MAPS["name_from_last_item_negative_total"]
+            ):continue
 
-            if "*" in fragment:
-                quantityAndPrice = re.split(r"\*", fragment)
-                quantity = quantityAndPrice[0]
-                price = float(quantityAndPrice[1].replace(',', '.'))
-            elif priceMatch:
-                tempPrice = float(re.split(r" ",priceMatch.group(0))[0].replace(',', '.'))
-                if not price: # helps to ignore the final price and keeps quantity and price per unit correct in data
-                    price = tempPrice
-                elif tempPrice < 0:# e.g. money of deposit returned for bottles
-                    price = -price 
-                    
-            elif discountMatch:
-                price = float(discountMatch.group(0).replace(',', '.'))
-            elif weightedMatch:
-                quantity = str(float(re.split(r" ",weightedMatch.group(0))[0].replace(',', '.')))
-            else:
-                # required for first item name, not not append empty values to list
-                if not item_name:
-                    item_name = fragment
-                    continue
-                
-                # require to calculate price per unit and save this as price instead of actual price
-                if "." in quantity:
-                    price = round(price/float(quantity),2)
-                
-                # save item and setup for next entry
-                items.append([item_name, price, quantity, date])
-                item_name = fragment
-                price = ""
-                quantity = "1"            
+            # Item or discount line (name + price)
+            if try_append_item(FIELD_MAPS["Default"]["no_quantity"], line, item_or_discount_pattern, items, date):continue
+
+            # Pure name line (fallback, no price/qty yet)
+            if try_append_item(FIELD_MAPS["Special"]["pure_name"], line, purename_pattern, items, date):continue
     return items
+
 
 def processDataFromMüllerReceipts(reader, date):
     """
@@ -390,25 +398,24 @@ def processDataFromMüllerReceipts(reader, date):
     """
     items = []
     lines = v.readLinesFromFakePDF(reader)
-    skippedIntroduction = False
+    state = {"skippedIntroduction": False, "skipRest": False}
+    start_marker_pattern = r"Summe"
+    end_marker = "ZU BEZAHLEN"
+
+    item_pattern = re.compile(r"^(?P<qty>\d+)\s+(?P<name>.+?)\s+(?P<price>\d+,\d{2})\s+(?P<total>\d+[.,]\d+[a-zA-Z0-9]*)$")
+    subtotal_pattern = re.compile(r"(?P<name>Zwischensumme)\s+(?P<price>\d+,\d{2})")
 
     for line in lines:
+        if not line: continue # Skip empty lines
         # Matches the text before the first item and after the last item
-        if not line: # skip empty lines automatically
+        if not should_process_line(line, state, start_marker_pattern, end_marker):
+            if state["skipRest"]: break
             continue
-        if "Summe" in line and not skippedIntroduction:
-            skippedIntroduction = True
-            continue
-        if "ZU BEZAHLEN" in line:
-            break
         
-        # easy structure, easy search
-        match = re.search(r"(\d+) ([A-Za-z0-9\s\S]+)\s+(\d+,\d{2}) ", line)
-        if match and skippedIntroduction:
-            if "Zwischensumme" in match.group(2): # skip them
-                continue
-            items.append([match.group(2), match.group(3).replace(",","."), match.group(1), date])
-        
+        if subtotal_pattern.search(line.strip()):continue
+
+        # item pattern
+        if try_append_item(FIELD_MAPS["Default"]["full"], line, item_pattern, items, date):continue
     return items
 
 def processDataFromOBIReceipts(reader, date):
@@ -420,46 +427,39 @@ def processDataFromOBIReceipts(reader, date):
     4. At the end we append item to list and reset to default values for next item iteration.
     """
     items = []  # List to store extracted item data (name, price, quantity, date)
-    page_num = 0
     num_pages = len(reader.pages)
-    skippedIntroduction = False
-    skipRest = False
+    state = {"skippedIntroduction": False, "skipRest": False}
+    start_marker_pattern = r"\d{2}\.\d{2}\.\d{4}"
+    end_marker = "Zwischensumme"
+
+    barcode_name_pattern = re.compile(r"^(?P<barcode>\d{10,13})\s+(?P<name>.+)$")
+    quantity_weight_pattern = re.compile(r"^(?P<qty>[\d,.]+)\s+(?P<unit>[A-Z]+)\s+a\s+(?P<price>\d+,\d{2})\s+([A-Z])\s+(?P<total>\d+,\d{2})$")
+    item_pattern = re.compile(r"^(?P<qty>\d+)\s+([A-Z]+)\s+([A-Z])\s+(?P<price>\d+,\d{2})$")
 
     for page_num in range(num_pages):
         page = reader.pages[page_num]
         text = page.extract_text()
         lines = text.split('\n')
-        if skipRest == True: break
+        if state["skipRest"]: break
 
-        item_name = ""
-        price = ""
-        quantity = "1"
         for line in lines:
             # Matches the text before the first item and after the last item
-            item_match = re.search(r"(\d{2}\.\d{2}\.\d{4})", line) # Need to use regex since a date is dynamic
-            if item_match and not skippedIntroduction:
-                skippedIntroduction = True
-                continue # required to skip this line as it will be matched with the later regex
-            if "Zwischensumme" in line:
-                    skipRest = True
-                    break
-            
-            if not item_name and skippedIntroduction:
-                item_name = line.strip() # found name, continue to next line!
+            if not should_process_line(line, state, start_marker_pattern, end_marker):
+                if state["skipRest"]: break
                 continue
-            
-            lineFragments = re.split(r"(?: )+", line)
-            if lineFragments and skippedIntroduction:                      
-                if lineFragments[1]:
-                    if lineFragments[1] == "1":
-                        price = lineFragments[-2].replace(',',".")
-                    else:
-                        quantity = float(lineFragments[1].replace(',',"."))
-                        price = lineFragments[-4].replace(',',".")
-                    
-                items.append([item_name, price, quantity, date])
 
-                item_name = ""
-                price = ""
-                quantity = "1"
+            # E.g. 4007874881403 Verb.-Mutter M8x30 (first line of an item)
+            if try_append_item(FIELD_MAPS["Special"]["barcode_name"], line, barcode_name_pattern, items, date,
+                POST_PROCESSING_MAPS["barcode_name"]
+            ):continue
+
+            # E.g. 0,004 KG a 41,99 B 0,17 or 3 ST a 1,59 B 4,77 (second line of an item)
+            if try_append_item(FIELD_MAPS["Default"]["no_name"], line, quantity_weight_pattern, items, date,
+                POST_PROCESSING_MAPS["name_from_last_item"]
+            ):continue
+
+            # E.g. 1 ST B 3,29 (alternative second line of an item)
+            if try_append_item(FIELD_MAPS["Default"]["no_name"], line, item_pattern, items, date,
+                POST_PROCESSING_MAPS["name_from_last_item"]
+            ):continue
     return items

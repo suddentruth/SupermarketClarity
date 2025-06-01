@@ -32,6 +32,8 @@ If you require the support of PNGs you need to install [Tesseract-OCR](https://g
 
 If you want to get the dayplots like in this [example](Example/Graphs/REWE/Over_Years_per_category_Spent_per_Category_per_Year.csv.png) you need to install [Dayplot](https://josephbarbierdarnal.github.io/dayplot/) via ``pip install dayplot``.
 
+Alternatively, use the [requirements.txt](requirements.txt) file for installation and overview of all packages.
+
 
 ## How to use it
 There are only two scripts for you two execute.

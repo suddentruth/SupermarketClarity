@@ -1,0 +1,7 @@
+python-dateutil # for date handling
+pypdf   # for PDF handling
+tesserocr # for OCR and therefore PNG handling
+pandas  # for data manipulation
+matplotlib # for plotting
+numpy   # for numerical operations
+dayplot # for plotting dates as a heatmap

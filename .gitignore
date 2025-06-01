@@ -182,6 +182,7 @@ Graphs/*
 Your Receipts/*
 Test Data - Markets Receipts/*
 *complete_items_categories.csv
+run_everything.sh
 
 # Exclusions to keep up the directory structure
 !Data/CSV Extracts/.gitkeep

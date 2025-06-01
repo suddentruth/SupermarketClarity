@@ -1,5 +1,9 @@
+v0.4.1
++ Added requirements.txt file for easier installation of dependencies
++ Refactored and umproved regex detection in step 01.
+
 v0.4.0
-+ Added daymap (heatmap) graphs for individual categories but also all categories over all years.
++ Added dayplot (heatmap) graphs for individual categories but also all categories over all years.
 + Extracting unique items to their own file now.
 
 v0.3.0
