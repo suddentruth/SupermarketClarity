@@ -1,3 +1,6 @@
+v0.5.0
++ Updated license from MIT to Hippocratic License
+
 v0.4.2
 + Refactored rest of the code
 + Added parallelization of extracting CSV from PDF/PNG files and loading data for "Over_Years_per_category_Spent_per_Category_per_Year.csv.png" plot and function "calculate_Spent_for_Categories_over_years"
