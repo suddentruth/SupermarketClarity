@@ -172,3 +172,21 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+# Project specific
+Data/CSV Extracts/*
+Data/CSV Results/*
+Data/CSV Results/For Graphs/*
+Graphs/*
+Your Receipts/*
+Test Data - Markets Receipts/*
+*complete_items_categories.csv
+run_everything.sh
+
+# Exclusions to keep up the directory structure
+!Data/CSV Extracts/.gitkeep
+!Data/CSV Results/.gitkeep
+!Data/CSV Results/For Graphs/.gitkeep
+!Graphs/.gitkeep
+!Your Receipts/.gitkeep
